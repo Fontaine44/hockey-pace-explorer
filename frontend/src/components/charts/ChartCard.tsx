@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components-custom/EmptyState";
 import { ErrorState } from "@/components-custom/ErrorState";
 import { LoadingState } from "@/components-custom/LoadingState";
@@ -21,6 +22,8 @@ interface ChartCardProps {
   emptyDescription?: string;
   error?: string | null;
   children?: ReactNode;
+  fill?: boolean;
+  className?: string;
 }
 
 export function ChartCard({
@@ -33,6 +36,8 @@ export function ChartCard({
   emptyDescription,
   error,
   children,
+  fill = false,
+  className,
 }: ChartCardProps) {
   let content = children;
   if (loading)
@@ -42,7 +47,7 @@ export function ChartCard({
     content = <EmptyState title={emptyTitle} description={emptyDescription} />;
 
   return (
-    <Card>
+    <Card className={cn(fill && "flex h-full flex-col", className)}>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div>
           <CardTitle>{title}</CardTitle>
@@ -52,7 +57,9 @@ export function ChartCard({
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}
       </CardHeader>
-      <CardContent>{content}</CardContent>
+      <CardContent className={fill ? "flex-1" : undefined}>
+        {content}
+      </CardContent>
     </Card>
   );
 }

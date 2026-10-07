@@ -1,13 +1,16 @@
-import { BarChart3 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
 
-const navigation = [{ label: "Overview", href: "/", icon: BarChart3 }];
+const navigation = [
+  { label: "Game review", href: "/" },
+  { label: "Pace & Outcomes", href: "/pace-outcomes" },
+  { label: "What is pace?", href: "/what-is-pace" },
+];
 
 function Navigation() {
   return (
-    <nav aria-label="Primary navigation" className="flex gap-1 md:flex-col">
+    <nav aria-label="Primary navigation" className="flex flex-wrap gap-1">
       {navigation.map((item) => (
         <NavLink
           key={item.href}
@@ -15,12 +18,11 @@ function Navigation() {
           end
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              "flex items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
               isActive && "bg-muted text-foreground",
             )
           }
         >
-          <item.icon className="size-4" aria-hidden="true" />
           {item.label}
         </NavLink>
       ))}
@@ -30,21 +32,19 @@ function Navigation() {
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-56 border-r bg-card p-4 md:block">
-        <div className="mb-7 px-2 text-sm font-semibold tracking-tight">
-          Hockey Pace Explorer
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <header className="relative shrink-0 border-b bg-card">
+        <div className="flex min-h-14 max-w-6xl items-center gap-8 px-5 py-3">
+          <span className="shrink-0 text-sm font-semibold tracking-tight">
+            Hockey Pace Explorer
+          </span>
         </div>
-        <Navigation />
-      </aside>
-      <header className="border-b bg-card px-4 py-3 md:hidden">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
-          <span className="text-sm font-semibold">Hockey Pace Explorer</span>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <Navigation />
         </div>
       </header>
-      <main className="md:pl-56">
-        <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <main className="min-h-0 flex-1">
+        <div className="flex h-full min-h-0 w-full flex-col p-4">
           <Outlet />
         </div>
       </main>
