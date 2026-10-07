@@ -4,13 +4,8 @@ export interface HealthResponse {
   version: string;
 }
 
-const DEFAULT_API_BASE_URL = "http://localhost:8000";
-
 function getApiBaseUrl(): string {
-  return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(
-    /\/$/,
-    "",
-  );
+  return (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 }
 
 export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {

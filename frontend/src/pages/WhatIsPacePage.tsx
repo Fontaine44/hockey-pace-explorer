@@ -1,13 +1,68 @@
+import { Activity, CircleCheck, CircleX } from "lucide-react";
+import { useEffect, useState } from "react";
+
 import { ChartCard } from "@/components/charts/ChartCard";
+import { MetricCard } from "@/components-custom/MetricCard";
 import { PageHeader } from "@/components-custom/PageHeader";
+import { getHealth, type HealthResponse } from "@/lib/api";
+
+interface HealthState {
+  loading: boolean;
+  data?: HealthResponse;
+  error?: string;
+}
 
 export function WhatIsPacePage() {
+  const [health, setHealth] = useState<HealthState>({ loading: true });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getHealth(controller.signal)
+      .then((data) => setHealth({ loading: false, data }))
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setHealth({
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Unable to reach the API",
+          });
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
+  const status = health.data
+    ? "Connected"
+    : health.error
+      ? "Unavailable"
+      : "Checking";
+  const StatusIcon = health.data
+    ? CircleCheck
+    : health.error
+      ? CircleX
+      : Activity;
+
   return (
     <>
       <PageHeader
         title="What is pace?"
         description="Understand the measures used to describe puck movement."
       />
+      <section aria-label="Backend API status" className="max-w-sm">
+        <MetricCard
+          label="Backend API"
+          value={status}
+          helperText={
+            health.data
+              ? `${health.data.service} | v${health.data.version}`
+              : (health.error ?? "Requesting /api/health")
+          }
+          icon={StatusIcon}
+          loading={health.loading}
+        />
+      </section>
       <ChartCard title="Puck-movement pace">
         <div className="space-y-4 text-sm text-muted-foreground">
           <p>
