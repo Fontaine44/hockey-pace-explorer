@@ -7,7 +7,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getGames, type Game } from "@/lib/api";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  getGames,
+  getPossessions,
+  type Game,
+  type Possession,
+} from "@/lib/api";
 import { useEffect, useState } from "react";
 
 export function GameReviewPage() {
@@ -15,6 +21,39 @@ export function GameReviewPage() {
   const [selectedGameId, setSelectedGameId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState("1");
+  const [possessionResult, setPossessionResult] = useState<{
+    key: string;
+    data: Possession[];
+    error: string | null;
+  } | null>(null);
+  const possessionKey = `${selectedGameId}:${period}`;
+  const currentResult =
+    possessionResult?.key === possessionKey ? possessionResult : null;
+  const selectedGame = games.find(
+    (game) => String(game.game_id) === selectedGameId,
+  );
+
+  useEffect(() => {
+    if (!selectedGameId) return;
+    const controller = new AbortController();
+    getPossessions(selectedGameId, period, controller.signal)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setPossessionResult({ key: possessionKey, data, error: null });
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setPossessionResult({
+            key: possessionKey,
+            data: [],
+            error: "Unable to load possessions.",
+          });
+        }
+      });
+    return () => controller.abort();
+  }, [selectedGameId, period, possessionKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -23,6 +62,7 @@ export function GameReviewPage() {
         if (controller.signal.aborted) return;
         setGames(data);
         setSelectedGameId(data.length ? String(data[0].game_id) : "");
+        setPeriod(String(data[0]?.periods[0] ?? 1));
       })
       .catch(() => {
         if (!controller.signal.aborted) setError("Unable to load games.");
@@ -41,7 +81,15 @@ export function GameReviewPage() {
         </label>
         <Select
           value={selectedGameId}
-          onValueChange={setSelectedGameId}
+          onValueChange={(value) => {
+            setSelectedGameId(value);
+            setPeriod(
+              String(
+                games.find((game) => String(game.game_id) === value)?.periods[0] ??
+                  1,
+              ),
+            );
+          }}
           disabled={loading || games.length === 0}
         >
           <SelectTrigger
@@ -100,9 +148,42 @@ export function GameReviewPage() {
             </div>
             <div>
               <h3 className="text-sm font-medium">Sequence selector</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Placeholder for the sequence list, period filter, and
-                previous/next navigation.
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-sm font-medium">Period:</span>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  value={period}
+                  onValueChange={(value) => {
+                    if (value) setPeriod(value);
+                  }}
+                  aria-label="Possession period"
+                  disabled={!selectedGameId}
+                >
+                  {selectedGame?.periods.map((value) => (
+                    <ToggleGroupItem
+                      key={value}
+                      value={String(value)}
+                      aria-label={`Period ${value}`}
+                      className="cursor-pointer"
+                    >
+                      {value}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+              <p
+                className="mt-3 text-sm text-muted-foreground"
+                role={currentResult?.error ? "alert" : "status"}
+              >
+                {!selectedGameId
+                  ? "Select a game."
+                  : !currentResult
+                    ? "Loading possessions..."
+                    : (currentResult.error ??
+                      (currentResult.data.length
+                        ? `${currentResult.data.length} possessions loaded.`
+                        : "No possessions in this period."))}
               </p>
             </div>
           </div>

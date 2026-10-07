@@ -12,6 +12,39 @@ export interface Game {
   home_team_name: string;
   away_team_name: string;
   source_dataset: string;
+  periods: number[];
+}
+
+export interface Possession {
+  possession_id: number;
+  game_id: number;
+  period: number;
+  possession_team_id: number;
+  team_name: string;
+  start_event_id: number;
+  end_event_id: number;
+  start_clock_seconds: number;
+  end_clock_seconds: number;
+  event_count: number;
+}
+
+export async function getPossessions(
+  gameId: string,
+  period: string,
+  signal?: AbortSignal,
+): Promise<Possession[]> {
+  const params = new URLSearchParams();
+  if (period !== "all") params.set("period", period);
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/games/${gameId}/possessions?${params}`,
+    { signal },
+  );
+  if (!response.ok) {
+    throw new Error(
+      `Possessions request failed with status ${response.status}`,
+    );
+  }
+  return (await response.json()) as Possession[];
 }
 
 export async function getGames(

@@ -40,7 +40,7 @@ def read_table(
 
 
 def main() -> None:
-    """Load the three exports into a fresh database, then replace the old file."""
+    """Load the exports into a fresh database, then replace the old file."""
     teams = read_table("teams", ["team_id", "source_dataset", "team_name"], ["team_id"])
     players = read_table(
         "players",
@@ -52,6 +52,65 @@ def main() -> None:
         ["game_id", "game_date", "home_team_id", "away_team_id", "source_dataset"],
         ["game_id", "home_team_id", "away_team_id"],
     )
+
+    events = pd.read_parquet(PROJECT_ROOT / "data/processed/events_augmented.parquet")
+    columns = [
+        "event_id",
+        "game_id",
+        "period",
+        "possession_id",
+        "possession_team_id",
+        "clock_seconds",
+        "source_dataset",
+    ]
+    if not set(columns).issubset(events.columns):
+        raise ValueError("events_augmented: missing possession columns")
+    events = events[columns].sort_values("event_id", kind="stable")
+    if events.isna().any().any():
+        raise ValueError("events_augmented: required possession values are missing")
+    for column in columns[:5]:
+        if not is_integer_dtype(events[column]):
+            raise ValueError(f"events_augmented: {column} must contain integers")
+    if not events.event_id.is_unique:
+        raise ValueError("events_augmented: duplicate event IDs")
+    if not events.period.gt(0).all() or not events.clock_seconds.ge(0).all():
+        raise ValueError("events_augmented: invalid period or clock")
+    grouped = events.groupby("possession_id", sort=False)
+    if (
+        not grouped[["game_id", "period", "possession_team_id", "source_dataset"]]
+        .nunique()
+        .eq(1)
+        .all()
+        .all()
+    ):
+        raise ValueError("events_augmented: inconsistent possession context")
+    possessions = grouped.agg(
+        game_id=("game_id", "first"),
+        period=("period", "first"),
+        possession_team_id=("possession_team_id", "first"),
+        source_dataset=("source_dataset", "first"),
+        start_event_id=("event_id", "first"),
+        end_event_id=("event_id", "last"),
+        start_clock_seconds=("clock_seconds", "first"),
+        end_clock_seconds=("clock_seconds", "last"),
+        event_count=("event_id", "size"),
+    ).reset_index()
+    if possessions.end_clock_seconds.gt(possessions.start_clock_seconds).any():
+        raise ValueError("events_augmented: possession clocks run backwards")
+    game_lookup = games.set_index("game_id")
+    if not possessions.game_id.isin(game_lookup.index).all():
+        raise ValueError("possessions: unknown game")
+    if not possessions.source_dataset.eq(
+        possessions.game_id.map(game_lookup.source_dataset)
+    ).all():
+        raise ValueError("possessions: game source dataset mismatch")
+    home = possessions.game_id.map(game_lookup.home_team_id)
+    away = possessions.game_id.map(game_lookup.away_team_id)
+    if not (
+        possessions.possession_team_id.eq(home)
+        | possessions.possession_team_id.eq(away)
+    ).all():
+        raise ValueError("possessions: controlling team is not in the game")
 
     team_sources = teams.set_index("team_id")["source_dataset"]
     for name, frame, column in [
@@ -117,6 +176,20 @@ def main() -> None:
                     away_team_id INTEGER NOT NULL REFERENCES teams(team_id),
                     source_dataset TEXT NOT NULL
                 );
+                CREATE TABLE possessions (
+                    possession_id INTEGER PRIMARY KEY,
+                    game_id INTEGER NOT NULL REFERENCES games(game_id),
+                    period INTEGER NOT NULL CHECK (period > 0),
+                    possession_team_id INTEGER NOT NULL REFERENCES teams(team_id),
+                    source_dataset TEXT NOT NULL,
+                    start_event_id INTEGER NOT NULL,
+                    end_event_id INTEGER NOT NULL,
+                    start_clock_seconds REAL NOT NULL,
+                    end_clock_seconds REAL NOT NULL,
+                    event_count INTEGER NOT NULL
+                );
+                CREATE INDEX possessions_game_period
+                    ON possessions(game_id, period, start_event_id);
             """)
             with connection:
                 connection.executemany(
@@ -151,12 +224,31 @@ def main() -> None:
                         for r in games.itertuples(index=False)
                     ),
                 )
+                connection.executemany(
+                    "INSERT INTO possessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        (
+                            int(r.possession_id),
+                            int(r.game_id),
+                            int(r.period),
+                            int(r.possession_team_id),
+                            r.source_dataset,
+                            int(r.start_event_id),
+                            int(r.end_event_id),
+                            float(r.start_clock_seconds),
+                            float(r.end_clock_seconds),
+                            int(r.event_count),
+                        )
+                        for r in possessions.itertuples(index=False)
+                    ),
+                )
             if connection.execute("PRAGMA foreign_key_check").fetchall():
                 raise ValueError("Imported database contains invalid team references")
             for name, frame in [
                 ("teams", teams),
                 ("players", players),
                 ("games", games),
+                ("possessions", possessions),
             ]:
                 count = connection.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
                 if count != len(frame):
@@ -175,7 +267,7 @@ def main() -> None:
 
     print(
         f"Imported {len(teams)} teams, {len(players)} players, "
-        f"{len(games)} games into {database}"
+        f"{len(games)} games, {len(possessions)} possessions into {database}"
     )
 
 
