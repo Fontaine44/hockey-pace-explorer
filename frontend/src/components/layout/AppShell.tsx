@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { label: "Game review", href: "/" },
-  { label: "Pace & Outcomes", href: "/pace-outcomes" },
+  { label: "Pace & outcomes", href: "/pace-outcomes" },
   { label: "What is pace?", href: "/what-is-pace" },
 ];
 
