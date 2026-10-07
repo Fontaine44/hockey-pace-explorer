@@ -74,7 +74,7 @@ export function GameReviewPage() {
   }, []);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex h-full min-h-0 shrink-0 flex-col gap-4">
       <div className="flex shrink-0 items-center gap-3">
         <label htmlFor="game-selector" className="text-sm font-medium">
           Game:
@@ -85,8 +85,8 @@ export function GameReviewPage() {
             setSelectedGameId(value);
             setPeriod(
               String(
-                games.find((game) => String(game.game_id) === value)?.periods[0] ??
-                  1,
+                games.find((game) => String(game.game_id) === value)
+                  ?.periods[0] ?? 1,
               ),
             );
           }}
@@ -125,81 +125,82 @@ export function GameReviewPage() {
         )}
       </div>
 
-      <section
-        aria-label="Game review panels"
-        className="items-stretch gap-4"
-
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-          gridTemplateRows: "repeat(2, minmax(0, 1fr))",
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        <ChartCard fill title="Sequence review" className="col-span-2">
-          <div className="grid h-full grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-sm font-medium">Selected sequence on rink</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Placeholder for the selected sequence, period, start clock,
-                score, controlling team, and rink events.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium">Sequence selector</h3>
-              <div className="mt-3 flex items-center gap-3">
-                <span className="text-sm font-medium">Period:</span>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={period}
-                  onValueChange={(value) => {
-                    if (value) setPeriod(value);
-                  }}
-                  aria-label="Possession period"
-                  disabled={!selectedGameId}
-                >
-                  {selectedGame?.periods.map((value) => (
-                    <ToggleGroupItem
-                      key={value}
-                      value={String(value)}
-                      aria-label={`Period ${value}`}
-                      className="cursor-pointer"
-                    >
-                      {value}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+      <section aria-label="Game review panels" className="min-h-0 flex-1">
+        <div
+          className="items-stretch gap-4 pb-4"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+            height: "calc(200% + 2rem)",
+          }}
+        >
+          <ChartCard fill title="Sequence review" className="col-span-2">
+            <div className="grid h-full grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-sm font-medium">
+                  Selected sequence on rink
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Placeholder for the selected sequence, period, start clock,
+                  score, controlling team, and rink events.
+                </p>
               </div>
-              <p
-                className="mt-3 text-sm text-muted-foreground"
-                role={currentResult?.error ? "alert" : "status"}
-              >
-                {!selectedGameId
-                  ? "Select a game."
-                  : !currentResult
-                    ? "Loading possessions..."
-                    : (currentResult.error ??
-                      (currentResult.data.length
-                        ? `${currentResult.data.length} possessions loaded.`
-                        : "No possessions in this period."))}
-              </p>
+              <div>
+                <h3 className="text-sm font-medium">Sequence selector</h3>
+                <div className="mt-3 flex items-center gap-3">
+                  <span className="text-sm font-medium">Period:</span>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={period}
+                    onValueChange={(value) => {
+                      if (value) setPeriod(value);
+                    }}
+                    aria-label="Possession period"
+                    disabled={!selectedGameId}
+                  >
+                    {selectedGame?.periods.map((value) => (
+                      <ToggleGroupItem
+                        key={value}
+                        value={String(value)}
+                        aria-label={`Period ${value}`}
+                        className="cursor-pointer"
+                      >
+                        {value}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+                <p
+                  className="mt-3 text-sm text-muted-foreground"
+                  role={currentResult?.error ? "alert" : "status"}
+                >
+                  {!selectedGameId
+                    ? "Select a game."
+                    : !currentResult
+                      ? "Loading possessions..."
+                      : (currentResult.error ??
+                        (currentResult.data.length
+                          ? `${currentResult.data.length} possessions loaded.`
+                          : "No possessions in this period."))}
+                </p>
+              </div>
             </div>
-          </div>
-        </ChartCard>
-        <ChartCard fill title="Whole-game pace polygrid">
-          <p className="text-sm text-muted-foreground">
-            Placeholder for whole-game team and pace selectors, rink map, and
-            ft/s legend.
-          </p>
-        </ChartCard>
-        <ChartCard fill title="Pace by team and period">
-          <p className="text-sm text-muted-foreground">
-            Placeholder for the independent pace selector and team comparison
-            across the full game and available periods.
-          </p>
-        </ChartCard>
+          </ChartCard>
+          <ChartCard fill title="Whole-game pace polygrid">
+            <p className="text-sm text-muted-foreground">
+              Placeholder for whole-game team and pace selectors, rink map, and
+              ft/s legend.
+            </p>
+          </ChartCard>
+          <ChartCard fill title="Pace by team and period">
+            <p className="text-sm text-muted-foreground">
+              Placeholder for the independent pace selector and team comparison
+              across the full game and available periods.
+            </p>
+          </ChartCard>
+        </div>
       </section>
     </div>
   );

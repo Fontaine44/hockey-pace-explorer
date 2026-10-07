@@ -43,7 +43,7 @@ export function AppShell() {
           <Navigation />
         </div>
       </header>
-      <main className="min-h-0 flex-1">
+      <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex h-full min-h-0 w-full flex-col p-4">
           <Outlet />
         </div>
