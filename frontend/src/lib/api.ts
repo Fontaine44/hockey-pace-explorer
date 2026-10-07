@@ -26,6 +26,9 @@ export interface Possession {
   start_clock_seconds: number;
   end_clock_seconds: number;
   event_count: number;
+  elapsed_seconds: number;
+  speed_total_ft_s: number;
+  pace_status: string;
 }
 
 export async function getPossessions(

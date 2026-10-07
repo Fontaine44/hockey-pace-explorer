@@ -84,7 +84,7 @@ def main() -> None:
         .all()
     ):
         raise ValueError("events_augmented: inconsistent possession context")
-    possessions = grouped.agg(
+    event_context = grouped.agg(
         game_id=("game_id", "first"),
         period=("period", "first"),
         possession_team_id=("possession_team_id", "first"),
@@ -95,6 +95,79 @@ def main() -> None:
         end_clock_seconds=("clock_seconds", "last"),
         event_count=("event_id", "size"),
     ).reset_index()
+    pace_columns = [
+        "possession_id",
+        "source_dataset",
+        "game_id",
+        "period",
+        "possession_team_id",
+        "events",
+        "elapsed_seconds",
+        "modeled_elapsed_seconds",
+        "speed_total_ft_s",
+        "pace_status",
+    ]
+    possessions = pd.read_parquet(
+        PROJECT_ROOT / "data/processed/pace_sequences.parquet"
+    )
+    if not set(pace_columns).issubset(possessions.columns):
+        raise ValueError("pace_sequences: missing required columns")
+    possessions = possessions[pace_columns].rename(columns={"events": "event_count"})
+    required = [
+        c
+        for c in possessions.columns
+        if c not in {"elapsed_seconds", "modeled_elapsed_seconds", "speed_total_ft_s"}
+    ]
+    if possessions[required].isna().any().any():
+        raise ValueError("pace_sequences: required values are missing")
+    if not possessions.possession_id.is_unique:
+        raise ValueError("pace_sequences: duplicate possession IDs")
+    for column in [
+        "possession_id",
+        "game_id",
+        "period",
+        "possession_team_id",
+        "event_count",
+    ]:
+        if not is_integer_dtype(possessions[column]):
+            raise ValueError(f"pace_sequences: {column} must contain integers")
+    if set(possessions.possession_id) != set(event_context.possession_id):
+        raise ValueError("pace_sequences: possessions do not match augmented events")
+    context = event_context.set_index("possession_id")
+    for column in [
+        "source_dataset",
+        "game_id",
+        "period",
+        "possession_team_id",
+        "event_count",
+    ]:
+        if (
+            not possessions[column]
+            .eq(possessions.possession_id.map(context[column]))
+            .all()
+        ):
+            raise ValueError(
+                f"pace_sequences: {column} does not match augmented events"
+            )
+    for column in ["elapsed_seconds", "modeled_elapsed_seconds", "speed_total_ft_s"]:
+        values = possessions[column].dropna()
+        if not values.map(
+            lambda value: isinstance(value, (int, float)) and 0 <= value < float("inf")
+        ).all():
+            raise ValueError(f"pace_sequences: invalid {column}")
+    possessions = possessions.merge(
+        event_context[
+            [
+                "possession_id",
+                "start_event_id",
+                "end_event_id",
+                "start_clock_seconds",
+                "end_clock_seconds",
+            ]
+        ],
+        on="possession_id",
+        validate="one_to_one",
+    )
     if possessions.end_clock_seconds.gt(possessions.start_clock_seconds).any():
         raise ValueError("events_augmented: possession clocks run backwards")
     game_lookup = games.set_index("game_id")
@@ -186,7 +259,11 @@ def main() -> None:
                     end_event_id INTEGER NOT NULL,
                     start_clock_seconds REAL NOT NULL,
                     end_clock_seconds REAL NOT NULL,
-                    event_count INTEGER NOT NULL
+                    event_count INTEGER NOT NULL,
+                    elapsed_seconds REAL,
+                    modeled_elapsed_seconds REAL,
+                    speed_total_ft_s REAL,
+                    pace_status TEXT NOT NULL
                 );
                 CREATE INDEX possessions_game_period
                     ON possessions(game_id, period, start_event_id);
@@ -225,7 +302,8 @@ def main() -> None:
                     ),
                 )
                 connection.executemany(
-                    "INSERT INTO possessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO possessions VALUES "
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         (
                             int(r.possession_id),
@@ -238,6 +316,16 @@ def main() -> None:
                             float(r.start_clock_seconds),
                             float(r.end_clock_seconds),
                             int(r.event_count),
+                            None
+                            if pd.isna(r.elapsed_seconds)
+                            else float(r.elapsed_seconds),
+                            None
+                            if pd.isna(r.modeled_elapsed_seconds)
+                            else float(r.modeled_elapsed_seconds),
+                            None
+                            if pd.isna(r.speed_total_ft_s)
+                            else float(r.speed_total_ft_s),
+                            r.pace_status,
                         )
                         for r in possessions.itertuples(index=False)
                     ),

@@ -47,7 +47,7 @@ export function ChartCard({
     content = <EmptyState title={emptyTitle} description={emptyDescription} />;
 
   return (
-    <Card className={cn(fill && "flex h-full flex-col", className)}>
+    <Card className={cn(fill && "flex h-full min-h-0 flex-col", className)}>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div>
           <CardTitle>{title}</CardTitle>
@@ -57,7 +57,7 @@ export function ChartCard({
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}
       </CardHeader>
-      <CardContent className={fill ? "flex-1" : undefined}>
+      <CardContent className={fill ? "min-h-0 flex-1" : undefined}>
         {content}
       </CardContent>
     </Card>
