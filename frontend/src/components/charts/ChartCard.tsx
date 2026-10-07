@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 
 interface ChartCardProps {
-  title: string;
+  title?: string;
   description?: string;
   actions?: ReactNode;
   loading?: boolean;
@@ -27,7 +27,7 @@ interface ChartCardProps {
 }
 
 export function ChartCard({
-  title,
+  title = "",
   description,
   actions,
   loading = false,
@@ -48,15 +48,17 @@ export function ChartCard({
 
   return (
     <Card className={cn(fill && "flex h-full min-h-0 flex-col", className)}>
-      <CardHeader className="flex-row items-start justify-between gap-4">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          {description ? (
-            <CardDescription className="mt-1">{description}</CardDescription>
-          ) : null}
-        </div>
-        {actions ? <div className="shrink-0">{actions}</div> : null}
-      </CardHeader>
+      {(title || description || actions) && (
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>{title}</CardTitle>
+            {description ? (
+              <CardDescription className="mt-1">{description}</CardDescription>
+            ) : null}
+          </div>
+          {actions ? <div className="shrink-0">{actions}</div> : null}
+        </CardHeader>
+      )}
       <CardContent className={fill ? "min-h-0 flex-1" : undefined}>
         {content}
       </CardContent>

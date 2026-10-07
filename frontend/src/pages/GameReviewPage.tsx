@@ -1,4 +1,12 @@
 import { ChartCard } from "@/components/charts/ChartCard";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import {
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -22,7 +30,7 @@ import {
   type Game,
   type Possession,
 } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function formatClock(seconds: number): string {
   const clock = Math.floor(seconds);
@@ -35,6 +43,11 @@ export function GameReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState("1");
+  const [selection, setSelection] = useState<{
+    key: string;
+    id: number;
+  } | null>(null);
+  const tableContainer = useRef<HTMLDivElement>(null);
   const [possessionResult, setPossessionResult] = useState<{
     key: string;
     data: Possession[];
@@ -46,6 +59,38 @@ export function GameReviewPage() {
   const selectedGame = games.find(
     (game) => String(game.game_id) === selectedGameId,
   );
+  const possessions = currentResult?.data ?? [];
+  const selectedIndex =
+    selection?.key === possessionKey
+      ? possessions.findIndex(
+          (possession) => possession.possession_id === selection.id,
+        )
+      : -1;
+  const selectedPossession = possessions[selectedIndex];
+
+  function selectPossession(index: number) {
+    const possession = possessions[index];
+    if (possession)
+      setSelection({ key: possessionKey, id: possession.possession_id });
+  }
+
+  useEffect(() => {
+    const container = tableContainer.current;
+    const row = container?.querySelector<HTMLTableRowElement>(
+      'tr[aria-selected="true"]',
+    );
+    if (!container || !row) return;
+    const bounds = container.getBoundingClientRect();
+    const rowBounds = row.getBoundingClientRect();
+    const headerHeight =
+      container.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+    if (rowBounds.top < bounds.top + headerHeight) {
+      container.scrollTop += rowBounds.top - bounds.top - headerHeight;
+    } else if (rowBounds.bottom > bounds.top + container.clientHeight) {
+      container.scrollTop +=
+        rowBounds.bottom - bounds.top - container.clientHeight;
+    }
+  }, [selectedPossession?.possession_id, possessionKey]);
 
   useEffect(() => {
     if (!selectedGameId) return;
@@ -54,6 +99,11 @@ export function GameReviewPage() {
       .then((data) => {
         if (!controller.signal.aborted) {
           setPossessionResult({ key: possessionKey, data, error: null });
+          setSelection(
+            data.length
+              ? { key: possessionKey, id: data[0].possession_id }
+              : null,
+          );
         }
       })
       .catch(() => {
@@ -148,21 +198,73 @@ export function GameReviewPage() {
             height: "calc(200% + 2rem)",
           }}
         >
-          <ChartCard fill title="Sequence review" className="col-span-2">
+          <ChartCard fill className="col-span-2 pt-5">
             <div className="grid h-full min-h-0 grid-cols-2 gap-4">
               <div>
                 <h3 className="text-sm font-medium">
                   Selected sequence on rink
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Placeholder for the selected sequence, period, start clock,
-                  score, controlling team, and rink events.
+                  {selectedPossession
+                    ? `${selectedPossession.team_name} · Period ${selectedPossession.period} · ${formatClock(selectedPossession.start_clock_seconds)}`
+                    : "Select a possession to review."}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Placeholder for rink events.
                 </p>
               </div>
               <div className="flex min-h-0 flex-col gap-3">
                 <div className="flex shrink-0 items-center justify-between gap-3">
                   <h3 className="text-sm font-medium">Possessions</h3>
                   <div className="flex items-center gap-3">
+                    <ButtonGroup aria-label="Possession navigation">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="cursor-pointer"
+                        aria-label="First possession"
+                        disabled={selectedIndex <= 0}
+                        onClick={() => selectPossession(0)}
+                      >
+                        <ChevronFirst aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="cursor-pointer"
+                        aria-label="Previous possession"
+                        disabled={selectedIndex <= 0}
+                        onClick={() => selectPossession(selectedIndex - 1)}
+                      >
+                        <ChevronLeft aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="cursor-pointer"
+                        aria-label="Next possession"
+                        disabled={
+                          selectedIndex < 0 ||
+                          selectedIndex >= possessions.length - 1
+                        }
+                        onClick={() => selectPossession(selectedIndex + 1)}
+                      >
+                        <ChevronRight aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="cursor-pointer"
+                        aria-label="Last possession"
+                        disabled={
+                          selectedIndex < 0 ||
+                          selectedIndex >= possessions.length - 1
+                        }
+                        onClick={() => selectPossession(possessions.length - 1)}
+                      >
+                        <ChevronLast aria-hidden="true" />
+                      </Button>
+                    </ButtonGroup>
                     <span className="text-sm font-medium">Period:</span>
                     <ToggleGroup
                       type="single"
@@ -187,7 +289,10 @@ export function GameReviewPage() {
                     </ToggleGroup>
                   </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+                <div
+                  ref={tableContainer}
+                  className="min-h-0 flex-1 overflow-auto rounded-md border"
+                >
                   <Table aria-label="Possessions for the selected period">
                     <TableHeader className="sticky top-0 z-10 bg-card">
                       <TableRow>
@@ -203,8 +308,23 @@ export function GameReviewPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentResult?.data.map((possession) => (
-                        <TableRow key={possession.possession_id}>
+                      {possessions.map((possession, index) => (
+                        <TableRow
+                          key={possession.possession_id}
+                          aria-selected={
+                            selectedPossession?.possession_id ===
+                            possession.possession_id
+                          }
+                          tabIndex={0}
+                          className="cursor-pointer aria-selected:bg-primary/20 aria-selected:hover:bg-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                          onClick={() => selectPossession(index)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              selectPossession(index);
+                            }
+                          }}
+                        >
                           <TableCell>{possession.team_name}</TableCell>
                           <TableCell className="whitespace-nowrap tabular-nums">
                             {formatClock(possession.start_clock_seconds)}
