@@ -38,6 +38,7 @@ class PossessionResponse(BaseModel):
     elapsed_seconds: float
     speed_total_ft_s: float
     pace_status: str
+    outcome: str
 
 
 @router.get("/games", response_model=list[GameResponse])
@@ -91,7 +92,8 @@ def get_possessions(
                t.team_name, p.start_event_id, p.end_event_id,
                p.start_clock_seconds, p.end_clock_seconds, p.event_count,
                COALESCE(p.elapsed_seconds, 0) AS elapsed_seconds,
-               COALESCE(p.speed_total_ft_s, 0) AS speed_total_ft_s, p.pace_status
+               COALESCE(p.speed_total_ft_s, 0) AS speed_total_ft_s,
+               p.pace_status, p.outcome
         FROM possessions AS p
         JOIN teams AS t ON t.team_id = p.possession_team_id
         WHERE p.game_id = :game_id AND (:period IS NULL OR p.period = :period)

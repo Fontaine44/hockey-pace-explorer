@@ -62,6 +62,7 @@ def main() -> None:
         "possession_team_id",
         "clock_seconds",
         "source_dataset",
+        "event",
     ]
     if not set(columns).issubset(events.columns):
         raise ValueError("events_augmented: missing possession columns")
@@ -73,6 +74,8 @@ def main() -> None:
             raise ValueError(f"events_augmented: {column} must contain integers")
     if not events.event_id.is_unique:
         raise ValueError("events_augmented: duplicate event IDs")
+    if not events.event.map(lambda value: isinstance(value, str) and bool(value)).all():
+        raise ValueError("events_augmented: event names must be nonempty strings")
     if not events.period.gt(0).all() or not events.clock_seconds.ge(0).all():
         raise ValueError("events_augmented: invalid period or clock")
     grouped = events.groupby("possession_id", sort=False)
@@ -94,6 +97,7 @@ def main() -> None:
         start_clock_seconds=("clock_seconds", "first"),
         end_clock_seconds=("clock_seconds", "last"),
         event_count=("event_id", "size"),
+        outcome=("event", "last"),
     ).reset_index()
     pace_columns = [
         "possession_id",
@@ -163,6 +167,7 @@ def main() -> None:
                 "end_event_id",
                 "start_clock_seconds",
                 "end_clock_seconds",
+                "outcome",
             ]
         ],
         on="possession_id",
@@ -263,7 +268,8 @@ def main() -> None:
                     elapsed_seconds REAL,
                     modeled_elapsed_seconds REAL,
                     speed_total_ft_s REAL,
-                    pace_status TEXT NOT NULL
+                    pace_status TEXT NOT NULL,
+                    outcome TEXT NOT NULL
                 );
                 CREATE INDEX possessions_game_period
                     ON possessions(game_id, period, start_event_id);
@@ -303,7 +309,7 @@ def main() -> None:
                 )
                 connection.executemany(
                     "INSERT INTO possessions VALUES "
-                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         (
                             int(r.possession_id),
@@ -326,6 +332,7 @@ def main() -> None:
                             if pd.isna(r.speed_total_ft_s)
                             else float(r.speed_total_ft_s),
                             r.pace_status,
+                            r.outcome,
                         )
                         for r in possessions.itertuples(index=False)
                     ),

@@ -210,14 +210,12 @@ export function GameReviewPage() {
                             {formatClock(possession.start_clock_seconds)}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {(possession.elapsed_seconds ?? 0).toFixed(1)}
+                            {(possession.elapsed_seconds ?? 0).toFixed(0)}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             {(possession.speed_total_ft_s ?? 0).toFixed(1)}
                           </TableCell>
-                          <TableCell title="Outcome labels have not been calculated">
-                            0
-                          </TableCell>
+                          <TableCell>{possession.outcome}</TableCell>
                         </TableRow>
                       ))}
                       {(!currentResult ||
