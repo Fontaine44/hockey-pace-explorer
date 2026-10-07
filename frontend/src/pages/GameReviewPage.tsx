@@ -7,31 +7,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
-
-const mockGames = [
-  {
-    id: "game-1",
-    date: "2025-10-08",
-    away: "Toronto Maple Leafs",
-    home: "Montreal Canadiens",
-  },
-  {
-    id: "game-2",
-    date: "2025-10-11",
-    away: "Edmonton Oilers",
-    home: "Vancouver Canucks",
-  },
-  {
-    id: "game-3",
-    date: "2025-10-14",
-    away: "Boston Bruins",
-    home: "Detroit Red Wings",
-  },
-];
+import { getGames, type Game } from "@/lib/api";
+import { useEffect, useState } from "react";
 
 export function GameReviewPage() {
-  const [selectedGameId, setSelectedGameId] = useState(mockGames[0].id);
+  const [games, setGames] = useState<Game[]>([]);
+  const [selectedGameId, setSelectedGameId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getGames("Olympics 2022", controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setGames(data);
+        setSelectedGameId(data.length ? String(data[0].game_id) : "");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError("Unable to load games.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -39,24 +39,42 @@ export function GameReviewPage() {
         <label htmlFor="game-selector" className="text-sm font-medium">
           Game:
         </label>
-        <Select value={selectedGameId} onValueChange={setSelectedGameId}>
+        <Select
+          value={selectedGameId}
+          onValueChange={setSelectedGameId}
+          disabled={loading || games.length === 0}
+        >
           <SelectTrigger
             id="game-selector"
             aria-label="Select game"
-            className="w-96 bg-white"
+            className="w-[480px] bg-white"
           >
-            <SelectValue placeholder="Choose a game" />
+            <SelectValue
+              placeholder={
+                loading
+                  ? "Loading games..."
+                  : error
+                    ? "Unavailable"
+                    : "No games found"
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {mockGames.map((game) => (
-                <SelectItem key={game.id} value={game.id}>
-                  {game.date} · {game.away} @ {game.home}
+              {games.map((game) => (
+                <SelectItem key={game.game_id} value={String(game.game_id)}>
+                  {game.game_date} · {game.away_team_name} @{" "}
+                  {game.home_team_name}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
       </div>
 
       <section
