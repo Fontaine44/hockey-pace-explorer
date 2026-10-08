@@ -6,8 +6,10 @@ import tempfile
 from contextlib import closing
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype, is_integer_dtype
+from scipy.ndimage import gaussian_filter
 from sqlalchemy.engine import make_url
 
 from backend.app.core.config import PROJECT_ROOT, get_settings
@@ -37,6 +39,132 @@ def read_table(
         ):
             raise ValueError(f"{name}: {column} must contain strings")
     return frame
+
+
+def build_game_polygrids(
+    cells: pd.DataFrame,
+    contributions: pd.DataFrame,
+    games: pd.DataFrame,
+    possessions: pd.DataFrame,
+    events: pd.DataFrame,
+) -> pd.DataFrame:
+    """Pool all situations, then smooth distance and time before dividing."""
+    geometry = [
+        "cell_id",
+        "grid_column",
+        "grid_row",
+        "x_min_ft",
+        "x_max_ft",
+        "y_min_ft",
+        "y_max_ft",
+    ]
+    keys = ["game_id", "possession_team_id", "cell_id"]
+    distances = ["distance_ft", "distance_ew_ft", "distance_ns_ft", "distance_n_ft"]
+    speeds = ["speed_total_ft_s", "speed_ew_ft_s", "speed_ns_ft_s", "speed_n_ft_s"]
+    allocations = ["modeled_elapsed_seconds", *distances]
+    references = [
+        "source_dataset",
+        "period",
+        "possession_id",
+        "start_event_id",
+        "end_event_id",
+    ]
+    if not set(geometry).issubset(cells.columns):
+        raise ValueError("polygrid_cells: missing geometry columns")
+    if not set(keys + allocations + references).issubset(contributions.columns):
+        raise ValueError("polygrid_contributions: missing required columns")
+    if cells[geometry].isna().any().any() or not cells.cell_id.is_unique:
+        raise ValueError("polygrid_cells: missing values or duplicate cells")
+    for column in ["cell_id", "grid_column", "grid_row"]:
+        if not is_integer_dtype(cells[column]):
+            raise ValueError(f"polygrid_cells: invalid {column}")
+    if (
+        cells.duplicated(["grid_row", "grid_column"]).any()
+        or not cells.grid_row.between(0, 16).all()
+        or not cells.grid_column.between(0, 39).all()
+    ):
+        raise ValueError("polygrid_cells: invalid grid positions")
+    for column, expected in [
+        ("x_min_ft", cells.grid_column * 5),
+        ("x_max_ft", (cells.grid_column + 1) * 5),
+        ("y_min_ft", cells.grid_row * 5),
+        ("y_max_ft", (cells.grid_row + 1) * 5),
+    ]:
+        if not cells[column].eq(expected).all():
+            raise ValueError("polygrid_cells: geometry does not match 5-foot grid")
+    required = keys + allocations + references
+    if contributions[required].isna().any().any():
+        raise ValueError("polygrid_contributions: missing values")
+    for column in keys + ["period", "possession_id", "start_event_id", "end_event_id"]:
+        if not is_integer_dtype(contributions[column]):
+            raise ValueError(f"polygrid_contributions: invalid {column}")
+    values = contributions[allocations].to_numpy(dtype=float)
+    if not np.isfinite(values).all() or (values < 0).any():
+        raise ValueError("polygrid_contributions: invalid distance or time")
+    if not contributions.cell_id.isin(cells.cell_id).all():
+        raise ValueError("polygrid_contributions: unknown cell")
+    if contributions.duplicated(["start_event_id", "end_event_id", "cell_id"]).any():
+        raise ValueError("polygrid_contributions: duplicate transition/cell")
+    lookup = possessions.set_index("possession_id")
+    if not contributions.possession_id.isin(lookup.index).all():
+        raise ValueError("polygrid_contributions: unknown possession")
+    for column in ["game_id", "period", "possession_team_id", "source_dataset"]:
+        if (
+            not contributions[column]
+            .eq(contributions.possession_id.map(lookup[column]))
+            .all()
+        ):
+            raise ValueError(f"polygrid_contributions: {column} mismatch")
+    event_lookup = events.set_index("event_id")
+    for endpoint in ["start_event_id", "end_event_id"]:
+        if not contributions[endpoint].isin(event_lookup.index).all():
+            raise ValueError("polygrid_contributions: unknown event")
+        if not contributions.possession_id.eq(
+            contributions[endpoint].map(event_lookup.possession_id)
+        ).all():
+            raise ValueError("polygrid_contributions: event possession mismatch")
+    if not contributions.start_event_id.lt(contributions.end_event_id).all():
+        raise ValueError("polygrid_contributions: invalid event ordering")
+    pooled = contributions.groupby(keys)[allocations].sum()
+    if not np.isfinite(pooled.to_numpy(dtype=float)).all():
+        raise ValueError("polygrid_contributions: non-finite pooled totals")
+    rows, cols = cells.grid_row.to_numpy(), cells.grid_column.to_numpy()
+    maps = []
+    for game in games.itertuples(index=False):
+        for team_id in [game.away_team_id, game.home_team_id]:
+            index = pd.MultiIndex.from_arrays(
+                [
+                    np.full(len(cells), game.game_id),
+                    np.full(len(cells), team_id),
+                    cells.cell_id,
+                ],
+                names=keys,
+            )
+            totals = pooled.reindex(index, fill_value=0)
+            time = np.zeros((17, 40))
+            time[rows, cols] = totals.modeled_elapsed_seconds.to_numpy()
+            smooth_time = gaussian_filter(time, sigma=2, mode="constant", truncate=4)
+            result = cells[["cell_id"]].copy()
+            result["game_id"] = game.game_id
+            result["team_id"] = team_id
+            result["modeled_elapsed_seconds"] = time[rows, cols]
+            for distance, speed in zip(distances, speeds, strict=True):
+                image = np.zeros_like(time)
+                image[rows, cols] = totals[distance].to_numpy()
+                numerator = gaussian_filter(image, sigma=2, mode="constant", truncate=4)
+                pace = np.divide(
+                    numerator,
+                    smooth_time,
+                    out=np.full_like(time, np.nan),
+                    where=(time > 0) & (smooth_time > 0),
+                )
+                if np.isinf(pace).any():
+                    raise ValueError("game_polygrid: non-finite smoothed pace")
+                result[speed] = pace[rows, cols]
+            maps.append(result)
+    return pd.concat(maps, ignore_index=True)[
+        ["game_id", "team_id", "cell_id", "modeled_elapsed_seconds", *speeds]
+    ]
 
 
 def main() -> None:
@@ -316,6 +444,14 @@ def main() -> None:
         if not frame["source_dataset"].eq(frame[column].map(team_sources)).all():
             raise ValueError(f"{name}: {column} references a different source dataset")
 
+    cells = pd.read_parquet(PROJECT_ROOT / "data/processed/pace_polygrid_cells.parquet")
+    contributions = pd.read_parquet(
+        PROJECT_ROOT / "data/processed/pace_polygrid_contributions.parquet"
+    )
+    game_polygrid = build_game_polygrids(
+        cells, contributions, games, possessions, events
+    )
+
     dates = pd.to_datetime(games["game_date"], errors="raise")
     if dates.isna().any() or not dates.eq(dates.dt.normalize()).all():
         raise ValueError("games: game_date must contain dates without a time component")
@@ -426,6 +562,26 @@ def main() -> None:
                     ON events(possession_id, event_id);
                 CREATE INDEX events_game_period
                     ON events(game_id, period, event_id);
+                CREATE TABLE polygrid_cells (
+                    cell_id INTEGER PRIMARY KEY,
+                    grid_column INTEGER NOT NULL CHECK (grid_column BETWEEN 0 AND 39),
+                    grid_row INTEGER NOT NULL CHECK (grid_row BETWEEN 0 AND 16),
+                    x_min_ft REAL NOT NULL, x_max_ft REAL NOT NULL,
+                    y_min_ft REAL NOT NULL, y_max_ft REAL NOT NULL,
+                    UNIQUE (grid_row, grid_column)
+                );
+                CREATE TABLE game_polygrid (
+                    game_id INTEGER NOT NULL REFERENCES games(game_id),
+                    team_id INTEGER NOT NULL REFERENCES teams(team_id),
+                    cell_id INTEGER NOT NULL REFERENCES polygrid_cells(cell_id),
+                    modeled_elapsed_seconds REAL NOT NULL
+                        CHECK (modeled_elapsed_seconds >= 0),
+                    speed_total_ft_s REAL CHECK (speed_total_ft_s >= 0),
+                    speed_ew_ft_s REAL CHECK (speed_ew_ft_s >= 0),
+                    speed_ns_ft_s REAL CHECK (speed_ns_ft_s >= 0),
+                    speed_n_ft_s REAL CHECK (speed_n_ft_s >= 0),
+                    PRIMARY KEY (game_id, team_id, cell_id)
+                );
             """)
             with connection:
                 connection.executemany(
@@ -504,6 +660,26 @@ def main() -> None:
                     "?, ?, ?, ?, ?, ?, ?)",
                     event_rows.itertuples(index=False, name=None),
                 )
+                connection.executemany(
+                    "INSERT INTO polygrid_cells VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    cells[
+                        [
+                            "cell_id",
+                            "grid_column",
+                            "grid_row",
+                            "x_min_ft",
+                            "x_max_ft",
+                            "y_min_ft",
+                            "y_max_ft",
+                        ]
+                    ].itertuples(index=False, name=None),
+                )
+                polygrid_rows = game_polygrid.astype(object)
+                polygrid_rows = polygrid_rows.where(polygrid_rows.notna(), None)
+                connection.executemany(
+                    "INSERT INTO game_polygrid VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    polygrid_rows.itertuples(index=False, name=None),
+                )
             if connection.execute("PRAGMA foreign_key_check").fetchall():
                 raise ValueError("Imported database contains invalid references")
             for name, frame in [
@@ -512,6 +688,8 @@ def main() -> None:
                 ("games", games),
                 ("possessions", possessions),
                 ("events", events),
+                ("polygrid_cells", cells),
+                ("game_polygrid", game_polygrid),
             ]:
                 count = connection.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
                 if count != len(frame):
@@ -531,7 +709,8 @@ def main() -> None:
     print(
         f"Imported {len(teams)} teams, {len(players)} players, "
         f"{len(games)} games, {len(possessions)} possessions, "
-        f"{len(events)} events into {database}"
+        f"{len(events)} events, {len(cells)} polygrid cells, "
+        f"{len(game_polygrid)} game polygrid rows into {database}"
     )
 
 

@@ -1,4 +1,5 @@
 import { ChartCard } from "@/components/charts/ChartCard";
+import { GamePolygridPanel } from "@/components/charts/GamePolygridPanel";
 import { RinkPlot } from "@/components/charts/RinkPlot";
 import {
   createRinkEventPlot,
@@ -409,7 +410,7 @@ export function GameReviewPage() {
                           key={value}
                           value={String(value)}
                           aria-label={`Period ${value}`}
-                          className="cursor-pointer"
+                          className="cursor-pointer data-[state=on]:bg-slate-900 data-[state=on]:text-white data-[state=on]:hover:bg-slate-800"
                         >
                           {value}
                         </ToggleGroupItem>
@@ -490,12 +491,7 @@ export function GameReviewPage() {
               </div>
             </div>
           </ChartCard>
-          <ChartCard fill title="Whole-game pace polygrid">
-            <p className="text-sm text-muted-foreground">
-              Placeholder for whole-game team and pace selectors, rink map, and
-              ft/s legend.
-            </p>
-          </ChartCard>
+          <GamePolygridPanel game={selectedGame} />
           <ChartCard fill title="Pace by team and period">
             <p className="text-sm text-muted-foreground">
               Placeholder for the independent pace selector and team comparison

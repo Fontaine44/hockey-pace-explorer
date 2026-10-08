@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import Plotly from "plotly.js-basic-dist-min";
+import Plotly from "plotly.js-cartesian-dist-min";
 import type { Annotations, Data, Layout } from "plotly.js";
 
 import rinkImage from "@/assets/rink.png";
@@ -39,6 +39,25 @@ export function RinkPlot({
     let data = EMPTY_TRACES;
     let arrows = EMPTY_ANNOTATIONS;
     let pending = Promise.resolve();
+    const heatmapMaskId = `rink-heatmap-${crypto.randomUUID()}`;
+
+    function clipHeatmaps() {
+      const heatmaps = plot.querySelector<SVGGElement>(".heatmaplayer");
+      const image = plot.querySelector<SVGImageElement>(".imagelayer image");
+      const definitions = plot.querySelector("svg.main-svg defs");
+      if (!heatmaps || !image || !definitions) return;
+
+      // The image's alpha channel gives the exact rink outline, including corners.
+      // Only mask heatmaps: event markers can still extend beyond the boards.
+      definitions.querySelector(`#${heatmapMaskId}`)?.remove();
+      const mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
+      mask.id = heatmapMaskId;
+      mask.setAttribute("maskUnits", "userSpaceOnUse");
+      mask.style.setProperty("mask-type", "alpha");
+      mask.appendChild(image.cloneNode(true));
+      definitions.appendChild(mask);
+      heatmaps.setAttribute("mask", `url(#${heatmapMaskId})`);
+    }
 
     function scheduleRender() {
       cancelAnimationFrame(frame);
@@ -116,6 +135,7 @@ export function RinkPlot({
               await Plotly.newPlot(plot, plotData, layout, config);
               initialized = true;
             }
+            if (!disposed) clipHeatmaps();
           })
           .catch((error: unknown) => {
             if (!disposed) console.error("Unable to render rink plot:", error);

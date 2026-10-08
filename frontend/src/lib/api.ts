@@ -4,6 +4,31 @@ export interface HealthResponse {
   version: string;
 }
 
+export interface PolygridCell {
+  team_id: number;
+  cell_id: number;
+  grid_row: number;
+  grid_column: number;
+  modeled_elapsed_seconds: number;
+  speed_total_ft_s: number | null;
+  speed_ew_ft_s: number | null;
+  speed_ns_ft_s: number | null;
+  speed_n_ft_s: number | null;
+}
+
+export async function getGamePolygrid(
+  gameId: string,
+  signal?: AbortSignal,
+): Promise<PolygridCell[]> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/games/${gameId}/polygrid`,
+    { signal },
+  );
+  if (!response.ok)
+    throw new Error(`Polygrid request failed with status ${response.status}`);
+  return (await response.json()) as PolygridCell[];
+}
+
 export interface Game {
   game_id: number;
   game_date: string;

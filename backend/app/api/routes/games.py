@@ -60,6 +60,42 @@ class PossessionEventResponse(BaseModel):
     detail_2: str | None
 
 
+class PolygridCellResponse(BaseModel):
+    team_id: int
+    cell_id: int
+    grid_row: int
+    grid_column: int
+    modeled_elapsed_seconds: float
+    speed_total_ft_s: float | None
+    speed_ew_ft_s: float | None
+    speed_ns_ft_s: float | None
+    speed_n_ft_s: float | None
+
+
+@router.get("/games/{game_id}/polygrid", response_model=list[PolygridCellResponse])
+def get_game_polygrid(
+    game_id: int,
+    db: Annotated[Session, Depends(get_db)],
+):
+    if not db.execute(
+        text("SELECT 1 FROM games WHERE game_id = :id"), {"id": game_id}
+    ).first():
+        raise HTTPException(status_code=404, detail="Game not found")
+    rows = db.execute(
+        text("""
+            SELECT p.team_id, p.cell_id, c.grid_row, c.grid_column,
+                   p.modeled_elapsed_seconds, p.speed_total_ft_s,
+                   p.speed_ew_ft_s, p.speed_ns_ft_s, p.speed_n_ft_s
+            FROM game_polygrid AS p
+            JOIN polygrid_cells AS c ON c.cell_id = p.cell_id
+            WHERE p.game_id = :game_id
+            ORDER BY p.team_id, p.cell_id
+        """),
+        {"game_id": game_id},
+    )
+    return [dict(row) for row in rows.mappings()]
+
+
 @router.get("/games", response_model=list[GameResponse])
 def get_games(
     source_dataset: Annotated[str, Query(min_length=1)],
