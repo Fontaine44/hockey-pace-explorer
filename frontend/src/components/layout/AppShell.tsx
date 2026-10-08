@@ -3,9 +3,9 @@ import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { label: "Game review", href: "/" },
+  { label: "What is pace?", href: "/" },
   { label: "Pace & outcomes", href: "/pace-outcomes" },
-  { label: "What is pace?", href: "/what-is-pace" },
+  { label: "Game review", href: "/game-review" },
 ];
 
 function Navigation() {

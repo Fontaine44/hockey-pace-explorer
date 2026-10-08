@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { GameReviewPage } from "@/pages/GameReviewPage";
@@ -11,9 +11,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<GameReviewPage />} />
+          <Route index element={<WhatIsPacePage />} />
           <Route path="pace-outcomes" element={<PaceOutcomesPage />} />
-          <Route path="what-is-pace" element={<WhatIsPacePage />} />
+          <Route path="game-review" element={<GameReviewPage />} />
+          <Route path="what-is-pace" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

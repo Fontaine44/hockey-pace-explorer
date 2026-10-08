@@ -254,36 +254,11 @@ export function GameReviewPage() {
                 <h3 className="shrink-0 text-sm font-medium">
                   Possession review
                 </h3>
-                <div className="flex min-h-0 flex-1 flex-col justify-center gap-6">
+                <div className="flex min-h-0 flex-1 flex-col justify-center gap-2">
                   <div
                     className="shrink-0 space-y-3"
                     aria-label="Selected possession scoreboard"
                   >
-                    <div className="flex h-6 items-center">
-                      <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
-                        {selectedPossession && selectedGame
-                          ? selectedPossession.possession_team_id ===
-                            selectedGame.away_team_id
-                            ? "Attacking ⮞"
-                            : "Defending"
-                          : "\u00a0"}
-                      </span>
-                      <div className="flex w-62 shrink-0 justify-center">
-                        <span className="flex h-6 min-w-12 items-center justify-center text-sm font-normal">
-                          {selectedPossession
-                            ? `${selectedPossession.away_skaters} vs ${selectedPossession.home_skaters}`
-                            : "\u00a0"}
-                        </span>
-                      </div>
-                      <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
-                        {selectedPossession && selectedGame
-                          ? selectedPossession.possession_team_id ===
-                            selectedGame.home_team_id
-                            ? "⮜ Attacking"
-                            : "Defending"
-                          : "\u00a0"}
-                      </span>
-                    </div>
                     <div className="flex items-stretch divide-x divide-white/25 overflow-hidden rounded-sm border border-slate-700 bg-slate-900 text-sm text-white shadow-md">
                       <span
                         className="min-w-0 flex-1 truncate bg-gradient-to-r from-emerald-900 to-emerald-700 px-3 py-2 text-center font-bold uppercase tracking-wide"
@@ -327,6 +302,31 @@ export function GameReviewPage() {
                         title={selectedGame?.home_team_name}
                       >
                         {selectedGame?.home_team_name ?? "\u00a0"}
+                      </span>
+                    </div>
+                    <div className="flex h-6 items-center">
+                      <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
+                        {selectedPossession && selectedGame
+                          ? selectedPossession.possession_team_id ===
+                            selectedGame.away_team_id
+                            ? "Attacking ⮞"
+                            : "Defending"
+                          : "\u00a0"}
+                      </span>
+                      <div className="flex w-62 shrink-0 justify-center">
+                        <span className="flex h-6 min-w-12 items-center justify-center text-sm font-normal">
+                          {selectedPossession
+                            ? `${selectedPossession.away_skaters} vs ${selectedPossession.home_skaters}`
+                            : "\u00a0"}
+                        </span>
+                      </div>
+                      <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
+                        {selectedPossession && selectedGame
+                          ? selectedPossession.possession_team_id ===
+                            selectedGame.home_team_id
+                            ? "⮜ Attacking"
+                            : "Defending"
+                          : "\u00a0"}
                       </span>
                     </div>
                   </div>
