@@ -1,4 +1,5 @@
 import { ChartCard } from "@/components/charts/ChartCard";
+import { RinkPlot } from "@/components/charts/RinkPlot";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {
@@ -200,18 +201,16 @@ export function GameReviewPage() {
         >
           <ChartCard fill className="col-span-2 pt-5">
             <div className="grid h-full min-h-0 grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium">
+              <div className="flex min-h-0 min-w-0 flex-col gap-2">
+                <h3 className="shrink-0 text-sm font-medium">
                   Selected sequence on rink
                 </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="shrink-0 text-sm text-muted-foreground">
                   {selectedPossession
                     ? `${selectedPossession.team_name} · Period ${selectedPossession.period} · ${formatClock(selectedPossession.start_clock_seconds)}`
                     : "Select a possession to review."}
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Placeholder for rink events.
-                </p>
+                <RinkPlot className="flex-1" />
               </div>
               <div className="flex min-h-0 flex-col gap-3">
                 <div className="flex shrink-0 items-center justify-between gap-3">
