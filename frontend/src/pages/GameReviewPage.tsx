@@ -1,5 +1,10 @@
 import { ChartCard } from "@/components/charts/ChartCard";
 import { RinkPlot } from "@/components/charts/RinkPlot";
+import {
+  createRinkEventPlot,
+  EMPTY_PLOT,
+} from "@/components/charts/rink-events";
+import { RinkLegend } from "@/components/charts/RinkLegend";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {
@@ -34,7 +39,7 @@ import {
   type Possession,
   type PossessionEvent,
 } from "@/lib/api";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function formatClock(seconds: number): string {
   const clock = Math.floor(seconds);
@@ -82,6 +87,13 @@ export function GameReviewPage() {
     error: string | null;
   } | null>(null);
   const currentEvents = eventsResult?.key === eventsKey ? eventsResult : null;
+  const rinkPlot = useMemo(
+    () =>
+      currentEvents?.data.length && selectedGame
+        ? createRinkEventPlot(currentEvents.data, selectedGame.home_team_id)
+        : EMPTY_PLOT,
+    [currentEvents, selectedGame],
+  );
 
   useEffect(() => {
     if (!selectedGameId || selectedPossessionId === undefined) return;
@@ -236,114 +248,94 @@ export function GameReviewPage() {
         >
           <ChartCard fill className="col-span-2 pt-5">
             <div className="grid h-full min-h-0 grid-cols-2 gap-16">
-              <div className="flex min-h-0 min-w-0 flex-col gap-6">
-                <div
-                  className="shrink-0 space-y-3 pt-4"
-                  aria-label="Selected possession scoreboard"
-                >
-                  <div className="flex h-6 items-center">
-                    <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
-                      {selectedPossession && selectedGame
-                        ? selectedPossession.possession_team_id ===
-                          selectedGame.away_team_id
-                          ? "Attacking ⮞"
-                          : "Defending"
-                        : "\u00a0"}
-                    </span>
-                    <div className="flex w-62 shrink-0 justify-center">
-                      <span className="flex h-6 min-w-12 items-center justify-center text-sm font-normal">
-                        {selectedPossession
-                          ? `${selectedPossession.away_skaters} vs ${selectedPossession.home_skaters}`
+              <div className="flex min-h-0 min-w-0 flex-col gap-3">
+                <h3 className="shrink-0 text-sm font-medium">
+                  Possession review
+                </h3>
+                <div className="flex min-h-0 flex-1 flex-col justify-center gap-6">
+                  <div
+                    className="shrink-0 space-y-3"
+                    aria-label="Selected possession scoreboard"
+                  >
+                    <div className="flex h-6 items-center">
+                      <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
+                        {selectedPossession && selectedGame
+                          ? selectedPossession.possession_team_id ===
+                            selectedGame.away_team_id
+                            ? "Attacking ⮞"
+                            : "Defending"
+                          : "\u00a0"}
+                      </span>
+                      <div className="flex w-62 shrink-0 justify-center">
+                        <span className="flex h-6 min-w-12 items-center justify-center text-sm font-normal">
+                          {selectedPossession
+                            ? `${selectedPossession.away_skaters} vs ${selectedPossession.home_skaters}`
+                            : "\u00a0"}
+                        </span>
+                      </div>
+                      <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
+                        {selectedPossession && selectedGame
+                          ? selectedPossession.possession_team_id ===
+                            selectedGame.home_team_id
+                            ? "⮜ Attacking"
+                            : "Defending"
                           : "\u00a0"}
                       </span>
                     </div>
-                    <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
-                      {selectedPossession && selectedGame
-                        ? selectedPossession.possession_team_id ===
-                          selectedGame.home_team_id
-                          ? "⮜ Attacking"
-                          : "Defending"
-                        : "\u00a0"}
-                    </span>
-                  </div>
-                  <div className="flex items-stretch divide-x divide-white/25 overflow-hidden rounded-sm border border-slate-700 bg-slate-900 text-sm text-white shadow-md">
-                    <span
-                      className="min-w-0 flex-1 truncate bg-gradient-to-r from-emerald-900 to-emerald-700 px-3 py-2 text-center font-bold uppercase tracking-wide"
-                      title={selectedGame?.away_team_name}
-                    >
-                      {selectedGame?.away_team_name ?? "\u00a0"}
-                    </span>
-                    <span
-                      className={cn(
-                        "w-11 shrink-0 px-3 py-2 text-center font-bold tabular-nums",
-                        selectedPossession?.contains_goal &&
-                          selectedPossession.possession_team_id ===
-                            selectedGame?.away_team_id
-                          ? "bg-amber-300 text-slate-950"
-                          : "bg-slate-800 text-white",
-                      )}
-                      aria-label={`Away score: ${selectedPossession?.away_score ?? "pending"}${selectedPossession?.contains_goal && selectedPossession.possession_team_id === selectedGame?.away_team_id ? ", goal in this possession" : ""}`}
-                    >
-                      {selectedPossession?.away_score ?? "\u00a0"}
-                    </span>
-                    <span className="w-40 shrink-0 whitespace-nowrap bg-slate-950 px-3 py-2 text-center font-bold tabular-nums">
-                      {selectedPossession
-                        ? `${formatClock(selectedPossession.start_clock_seconds)} - ${formatClock(selectedPossession.end_clock_seconds)}`
-                        : "\u00a0"}
-                    </span>
-                    <span
-                      className={cn(
-                        "w-11 shrink-0 px-3 py-2 text-center font-bold tabular-nums",
-                        selectedPossession?.contains_goal &&
-                          selectedPossession.possession_team_id ===
-                            selectedGame?.home_team_id
-                          ? "bg-amber-300 text-slate-950"
-                          : "bg-slate-800 text-white",
-                      )}
-                      aria-label={`Home score: ${selectedPossession?.home_score ?? "pending"}${selectedPossession?.contains_goal && selectedPossession.possession_team_id === selectedGame?.home_team_id ? ", goal in this possession" : ""}`}
-                    >
-                      {selectedPossession?.home_score ?? "\u00a0"}
-                    </span>
-                    <span
-                      className="min-w-0 flex-1 truncate bg-gradient-to-r from-red-700 to-red-900 px-3 py-2 text-center font-bold uppercase tracking-wide"
-                      title={selectedGame?.home_team_name}
-                    >
-                      {selectedGame?.home_team_name ?? "\u00a0"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-4">
-                  <RinkPlot className="aspect-[2010/860] h-auto max-h-[65%] shrink-0 items-start" />
-                  <section
-                    aria-label="Possession events debug"
-                    className="flex min-h-0 flex-1 flex-col gap-2 rounded-md border p-3"
-                  >
-                    <h3 className="shrink-0 text-sm font-medium">
-                      Events
-                      {currentEvents && !currentEvents.error
-                        ? ` (${currentEvents.data.length})`
-                        : ""}
-                    </h3>
-                    {currentEvents &&
-                    !currentEvents.error &&
-                    currentEvents.data.length ? (
-                      <pre className="min-h-0 flex-1 overflow-auto text-xs">
-                        {JSON.stringify(currentEvents.data, null, 2)}
-                      </pre>
-                    ) : (
-                      <p
-                        role={currentEvents?.error ? "alert" : "status"}
-                        className="text-sm text-muted-foreground"
+                    <div className="flex items-stretch divide-x divide-white/25 overflow-hidden rounded-sm border border-slate-700 bg-slate-900 text-sm text-white shadow-md">
+                      <span
+                        className="min-w-0 flex-1 truncate bg-gradient-to-r from-emerald-900 to-emerald-700 px-3 py-2 text-center font-bold uppercase tracking-wide"
+                        title={selectedGame?.away_team_name}
                       >
-                        {!selectedPossession
-                          ? "Select a possession to view its events."
-                          : !currentEvents
-                            ? "Loading events..."
-                            : (currentEvents.error ??
-                              "No events in this possession.")}
-                      </p>
-                    )}
-                  </section>
+                        {selectedGame?.away_team_name ?? "\u00a0"}
+                      </span>
+                      <span
+                        className={cn(
+                          "w-11 shrink-0 px-3 py-2 text-center font-bold tabular-nums",
+                          selectedPossession?.contains_goal &&
+                            selectedPossession.possession_team_id ===
+                              selectedGame?.away_team_id
+                            ? "bg-amber-300 text-slate-950"
+                            : "bg-slate-800 text-white",
+                        )}
+                        aria-label={`Away score: ${selectedPossession?.away_score ?? "pending"}${selectedPossession?.contains_goal && selectedPossession.possession_team_id === selectedGame?.away_team_id ? ", goal in this possession" : ""}`}
+                      >
+                        {selectedPossession?.away_score ?? "\u00a0"}
+                      </span>
+                      <span className="w-40 shrink-0 whitespace-nowrap bg-slate-950 px-3 py-2 text-center font-bold tabular-nums">
+                        {selectedPossession
+                          ? `${formatClock(selectedPossession.start_clock_seconds)} - ${formatClock(selectedPossession.end_clock_seconds)}`
+                          : "\u00a0"}
+                      </span>
+                      <span
+                        className={cn(
+                          "w-11 shrink-0 px-3 py-2 text-center font-bold tabular-nums",
+                          selectedPossession?.contains_goal &&
+                            selectedPossession.possession_team_id ===
+                              selectedGame?.home_team_id
+                            ? "bg-amber-300 text-slate-950"
+                            : "bg-slate-800 text-white",
+                        )}
+                        aria-label={`Home score: ${selectedPossession?.home_score ?? "pending"}${selectedPossession?.contains_goal && selectedPossession.possession_team_id === selectedGame?.home_team_id ? ", goal in this possession" : ""}`}
+                      >
+                        {selectedPossession?.home_score ?? "\u00a0"}
+                      </span>
+                      <span
+                        className="min-w-0 flex-1 truncate bg-gradient-to-r from-red-700 to-red-900 px-3 py-2 text-center font-bold uppercase tracking-wide"
+                        title={selectedGame?.home_team_name}
+                      >
+                        {selectedGame?.home_team_name ?? "\u00a0"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex min-h-0 shrink flex-col gap-4">
+                    <RinkPlot
+                      traces={rinkPlot.traces}
+                      annotations={rinkPlot.annotations}
+                      className="aspect-[2010/860] h-auto min-h-0 shrink items-start"
+                    />
+                    <RinkLegend />
+                  </div>
                 </div>
               </div>
               <div className="flex min-h-0 flex-col gap-3">

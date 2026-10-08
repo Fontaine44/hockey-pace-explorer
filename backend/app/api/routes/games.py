@@ -55,6 +55,9 @@ class PossessionEventResponse(BaseModel):
     clock_seconds: float
     team_id: int
     player_name: str
+    player_id: int
+    detail_1: str | None
+    detail_2: str | None
 
 
 @router.get("/games", response_model=list[GameResponse])
@@ -145,7 +148,7 @@ def get_possession_events(
     rows = db.execute(
         text("""
             SELECT e.event_id, e.event, e.x, e.y, e.clock_seconds,
-                   e.team_id, p.player_name
+                   e.team_id, p.player_name, e.player_id, e.detail_1, e.detail_2
             FROM events AS e
             JOIN players AS p ON p.player_id = e.player_id
             WHERE e.game_id = :game_id AND e.possession_id = :possession_id

@@ -1,21 +1,29 @@
 import { useEffect, useRef } from "react";
 import Plotly from "plotly.js-basic-dist-min";
-import type { Data, Layout } from "plotly.js";
+import type { Annotations, Data, Layout } from "plotly.js";
 
 import rinkImage from "@/assets/rink.png";
 import { cn } from "@/lib/utils";
 
 interface RinkPlotProps {
   traces?: Data[];
+  annotations?: Partial<Annotations>[];
   className?: string;
 }
 
 const EMPTY_TRACES: Data[] = [];
+const EMPTY_ANNOTATIONS: Partial<Annotations>[] = [];
 const ASPECT_RATIO = 2010 / 860;
 
-export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
+export function RinkPlot({
+  traces = EMPTY_TRACES,
+  annotations = EMPTY_ANNOTATIONS,
+  className,
+}: RinkPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const updateRef = useRef<((data: Data[]) => void) | null>(null);
+  const updateRef = useRef<
+    ((data: Data[], arrows: Partial<Annotations>[]) => void) | null
+  >(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -29,6 +37,7 @@ export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
     let initialized = false;
     let frame = 0;
     let data = EMPTY_TRACES;
+    let arrows = EMPTY_ANNOTATIONS;
     let pending = Promise.resolve();
 
     function scheduleRender() {
@@ -39,11 +48,14 @@ export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
             if (disposed) return;
             const available = container!.getBoundingClientRect();
             if (available.width <= 0 || available.height <= 0) return;
-            const width = Math.min(
-              available.width,
-              available.height * ASPECT_RATIO,
+            const buffer = 10;
+            const rinkWidth = Math.min(
+              Math.max(0, available.width - buffer * 2),
+              Math.max(0, available.height - buffer * 2) * ASPECT_RATIO,
             );
-            const height = width / ASPECT_RATIO;
+            if (rinkWidth <= 0) return;
+            const width = rinkWidth + buffer * 2;
+            const height = rinkWidth / ASPECT_RATIO + buffer * 2;
             plot.style.width = `${width}px`;
             plot.style.height = `${height}px`;
 
@@ -55,8 +67,27 @@ export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
               plot_bgcolor: "rgba(0,0,0,0)",
               showlegend: false,
               dragmode: false,
-              xaxis: { range: [0, 200], visible: false, fixedrange: true },
-              yaxis: { range: [0, 85], visible: false, fixedrange: true },
+              annotations: arrows,
+              // Put the buffer inside the axis ranges so rink-edge symbols remain
+              // inside Plotly's drawing area, rather than relying on outer margins.
+              xaxis: {
+                range: [
+                  (-buffer * 200) / rinkWidth,
+                  200 + (buffer * 200) / rinkWidth,
+                ],
+                visible: false,
+                fixedrange: true,
+                layer: "below traces",
+              },
+              yaxis: {
+                range: [
+                  (-buffer * 85) / (rinkWidth / ASPECT_RATIO),
+                  85 + (buffer * 85) / (rinkWidth / ASPECT_RATIO),
+                ],
+                visible: false,
+                fixedrange: true,
+                layer: "below traces",
+              },
               images: [
                 {
                   source: rinkImage,
@@ -73,11 +104,16 @@ export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
                 },
               ],
             };
+            const plotData = data.map((trace) =>
+              trace.type === "scatter"
+                ? { ...trace, cliponaxis: false }
+                : trace,
+            );
             const config = { displayModeBar: false, scrollZoom: false };
             if (initialized) {
-              await Plotly.react(plot, data, layout, config);
+              await Plotly.react(plot, plotData, layout, config);
             } else {
-              await Plotly.newPlot(plot, data, layout, config);
+              await Plotly.newPlot(plot, plotData, layout, config);
               initialized = true;
             }
           })
@@ -87,8 +123,9 @@ export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
       });
     }
 
-    updateRef.current = (nextData) => {
+    updateRef.current = (nextData, nextArrows) => {
       data = nextData;
+      arrows = nextArrows;
       scheduleRender();
     };
     const observer = new ResizeObserver(scheduleRender);
@@ -107,8 +144,8 @@ export function RinkPlot({ traces = EMPTY_TRACES, className }: RinkPlotProps) {
   }, []);
 
   useEffect(() => {
-    updateRef.current?.(traces);
-  }, [traces]);
+    updateRef.current?.(traces, annotations);
+  }, [traces, annotations]);
 
   return (
     <div

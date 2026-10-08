@@ -46,6 +46,9 @@ export interface PossessionEvent {
   clock_seconds: number;
   team_id: number;
   player_name: string;
+  player_id: number;
+  detail_1: string | null;
+  detail_2: string | null;
 }
 
 export async function getPossessionEvents(
