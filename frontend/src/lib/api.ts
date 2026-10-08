@@ -31,6 +31,11 @@ export interface Possession {
   speed_total_ft_s: number;
   pace_status: string;
   outcome: string;
+  home_score: number;
+  away_score: number;
+  home_skaters: number;
+  away_skaters: number;
+  contains_goal: boolean;
 }
 
 export async function getPossessions(

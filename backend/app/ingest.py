@@ -7,7 +7,7 @@ from contextlib import closing
 from pathlib import Path
 
 import pandas as pd
-from pandas.api.types import is_integer_dtype
+from pandas.api.types import is_bool_dtype, is_integer_dtype
 from sqlalchemy.engine import make_url
 
 from backend.app.core.config import PROJECT_ROOT, get_settings
@@ -63,6 +63,11 @@ def main() -> None:
         "clock_seconds",
         "source_dataset",
         "event",
+        "team_goals",
+        "opponent_goals",
+        "team_skaters",
+        "opponent_skaters",
+        "is_home",
     ]
     if not set(columns).issubset(events.columns):
         raise ValueError("events_augmented: missing possession columns")
@@ -78,6 +83,24 @@ def main() -> None:
         raise ValueError("events_augmented: event names must be nonempty strings")
     if not events.period.gt(0).all() or not events.clock_seconds.ge(0).all():
         raise ValueError("events_augmented: invalid period or clock")
+    for column in ["team_goals", "opponent_goals", "team_skaters", "opponent_skaters"]:
+        if not is_integer_dtype(events[column]) or not events[column].ge(0).all():
+            raise ValueError(f"events_augmented: invalid {column}")
+    if not is_bool_dtype(events.is_home):
+        raise ValueError("events_augmented: is_home must contain booleans")
+    events["home_score"] = events.team_goals.where(
+        events.is_home, events.opponent_goals
+    )
+    events["away_score"] = events.opponent_goals.where(
+        events.is_home, events.team_goals
+    )
+    events["home_skaters"] = events.team_skaters.where(
+        events.is_home, events.opponent_skaters
+    )
+    events["away_skaters"] = events.opponent_skaters.where(
+        events.is_home, events.team_skaters
+    )
+    events["contains_goal"] = events.event.isin(["Goal", "Penalty Shot Goal"])
     grouped = events.groupby("possession_id", sort=False)
     if (
         not grouped[["game_id", "period", "possession_team_id", "source_dataset"]]
@@ -98,6 +121,11 @@ def main() -> None:
         end_clock_seconds=("clock_seconds", "last"),
         event_count=("event_id", "size"),
         outcome=("event", "last"),
+        home_score=("home_score", "last"),
+        away_score=("away_score", "last"),
+        home_skaters=("home_skaters", "last"),
+        away_skaters=("away_skaters", "last"),
+        contains_goal=("contains_goal", "any"),
     ).reset_index()
     pace_columns = [
         "possession_id",
@@ -168,6 +196,11 @@ def main() -> None:
                 "start_clock_seconds",
                 "end_clock_seconds",
                 "outcome",
+                "home_score",
+                "away_score",
+                "home_skaters",
+                "away_skaters",
+                "contains_goal",
             ]
         ],
         on="possession_id",
@@ -189,6 +222,12 @@ def main() -> None:
         | possessions.possession_team_id.eq(away)
     ).all():
         raise ValueError("possessions: controlling team is not in the game")
+    possessions["home_score"] += (
+        possessions.contains_goal & possessions.possession_team_id.eq(home)
+    ).astype(int)
+    possessions["away_score"] += (
+        possessions.contains_goal & possessions.possession_team_id.eq(away)
+    ).astype(int)
 
     team_sources = teams.set_index("team_id")["source_dataset"]
     for name, frame, column in [
@@ -269,7 +308,12 @@ def main() -> None:
                     modeled_elapsed_seconds REAL,
                     speed_total_ft_s REAL,
                     pace_status TEXT NOT NULL,
-                    outcome TEXT NOT NULL
+                    outcome TEXT NOT NULL,
+                    home_score INTEGER NOT NULL CHECK (home_score >= 0),
+                    away_score INTEGER NOT NULL CHECK (away_score >= 0),
+                    home_skaters INTEGER NOT NULL CHECK (home_skaters >= 0),
+                    away_skaters INTEGER NOT NULL CHECK (away_skaters >= 0),
+                    contains_goal INTEGER NOT NULL CHECK (contains_goal IN (0, 1))
                 );
                 CREATE INDEX possessions_game_period
                     ON possessions(game_id, period, start_event_id);
@@ -309,7 +353,7 @@ def main() -> None:
                 )
                 connection.executemany(
                     "INSERT INTO possessions VALUES "
-                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         (
                             int(r.possession_id),
@@ -333,6 +377,11 @@ def main() -> None:
                             else float(r.speed_total_ft_s),
                             r.pace_status,
                             r.outcome,
+                            int(r.home_score),
+                            int(r.away_score),
+                            int(r.home_skaters),
+                            int(r.away_skaters),
+                            int(r.contains_goal),
                         )
                         for r in possessions.itertuples(index=False)
                     ),
