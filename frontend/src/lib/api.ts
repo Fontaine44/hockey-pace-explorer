@@ -38,6 +38,31 @@ export interface Possession {
   contains_goal: boolean;
 }
 
+export interface PossessionEvent {
+  event_id: number;
+  event: string;
+  x: number | null;
+  y: number | null;
+  clock_seconds: number;
+  team_id: number;
+  player_name: string;
+}
+
+export async function getPossessionEvents(
+  gameId: string,
+  possessionId: number,
+  signal?: AbortSignal,
+): Promise<PossessionEvent[]> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/games/${gameId}/possessions/${possessionId}/events`,
+    { signal },
+  );
+  if (!response.ok) {
+    throw new Error(`Events request failed with status ${response.status}`);
+  }
+  return (await response.json()) as PossessionEvent[];
+}
+
 export async function getPossessions(
   gameId: string,
   period: string,

@@ -28,9 +28,11 @@ import {
 } from "@/components/ui/table";
 import {
   getGames,
+  getPossessionEvents,
   getPossessions,
   type Game,
   type Possession,
+  type PossessionEvent,
 } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 
@@ -69,6 +71,38 @@ export function GameReviewPage() {
         )
       : -1;
   const selectedPossession = possessions[selectedIndex];
+  const selectedPossessionId = selectedPossession?.possession_id;
+  const eventsKey =
+    selectedPossessionId === undefined
+      ? ""
+      : `${possessionKey}:${selectedPossessionId}`;
+  const [eventsResult, setEventsResult] = useState<{
+    key: string;
+    data: PossessionEvent[];
+    error: string | null;
+  } | null>(null);
+  const currentEvents = eventsResult?.key === eventsKey ? eventsResult : null;
+
+  useEffect(() => {
+    if (!selectedGameId || selectedPossessionId === undefined) return;
+    const controller = new AbortController();
+    getPossessionEvents(selectedGameId, selectedPossessionId, controller.signal)
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setEventsResult({ key: eventsKey, data, error: null });
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setEventsResult({
+            key: eventsKey,
+            data: [],
+            error: "Unable to load events.",
+          });
+        }
+      });
+    return () => controller.abort();
+  }, [selectedGameId, selectedPossessionId, eventsKey]);
 
   function selectPossession(index: number) {
     const possession = possessions[index];
@@ -201,7 +235,7 @@ export function GameReviewPage() {
           }}
         >
           <ChartCard fill className="col-span-2 pt-5">
-            <div className="grid h-full min-h-0 grid-cols-2 gap-12">
+            <div className="grid h-full min-h-0 grid-cols-2 gap-16">
               <div className="flex min-h-0 min-w-0 flex-col gap-6">
                 <div
                   className="shrink-0 space-y-3 pt-4"
@@ -278,7 +312,39 @@ export function GameReviewPage() {
                     </span>
                   </div>
                 </div>
-                <RinkPlot className="flex-1 items-start" />
+                <div className="flex min-h-0 flex-1 flex-col gap-4">
+                  <RinkPlot className="aspect-[2010/860] h-auto max-h-[65%] shrink-0 items-start" />
+                  <section
+                    aria-label="Possession events debug"
+                    className="flex min-h-0 flex-1 flex-col gap-2 rounded-md border p-3"
+                  >
+                    <h3 className="shrink-0 text-sm font-medium">
+                      Events
+                      {currentEvents && !currentEvents.error
+                        ? ` (${currentEvents.data.length})`
+                        : ""}
+                    </h3>
+                    {currentEvents &&
+                    !currentEvents.error &&
+                    currentEvents.data.length ? (
+                      <pre className="min-h-0 flex-1 overflow-auto text-xs">
+                        {JSON.stringify(currentEvents.data, null, 2)}
+                      </pre>
+                    ) : (
+                      <p
+                        role={currentEvents?.error ? "alert" : "status"}
+                        className="text-sm text-muted-foreground"
+                      >
+                        {!selectedPossession
+                          ? "Select a possession to view its events."
+                          : !currentEvents
+                            ? "Loading events..."
+                            : (currentEvents.error ??
+                              "No events in this possession.")}
+                      </p>
+                    )}
+                  </section>
+                </div>
               </div>
               <div className="flex min-h-0 flex-col gap-3">
                 <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3">

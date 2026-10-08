@@ -47,6 +47,16 @@ class PossessionResponse(BaseModel):
     contains_goal: bool
 
 
+class PossessionEventResponse(BaseModel):
+    event_id: int
+    event: str
+    x: float | None
+    y: float | None
+    clock_seconds: float
+    team_id: int
+    player_name: str
+
+
 @router.get("/games", response_model=list[GameResponse])
 def get_games(
     source_dataset: Annotated[str, Query(min_length=1)],
@@ -109,5 +119,38 @@ def get_possessions(
         ORDER BY p.start_event_id
     """),
         {"game_id": game_id, "period": period},
+    )
+    return [dict(row) for row in rows.mappings()]
+
+
+@router.get(
+    "/games/{game_id}/possessions/{possession_id}/events",
+    response_model=list[PossessionEventResponse],
+)
+def get_possession_events(
+    game_id: int,
+    possession_id: int,
+    db: Annotated[Session, Depends(get_db)],
+):
+    if not db.execute(
+        text("""
+            SELECT 1 FROM possessions
+            WHERE game_id = :game_id AND possession_id = :possession_id
+        """),
+        {"game_id": game_id, "possession_id": possession_id},
+    ).first():
+        raise HTTPException(
+            status_code=404, detail="Possession not found for this game"
+        )
+    rows = db.execute(
+        text("""
+            SELECT e.event_id, e.event, e.x, e.y, e.clock_seconds,
+                   e.team_id, p.player_name
+            FROM events AS e
+            JOIN players AS p ON p.player_id = e.player_id
+            WHERE e.game_id = :game_id AND e.possession_id = :possession_id
+            ORDER BY e.event_id
+        """),
+        {"game_id": game_id, "possession_id": possession_id},
     )
     return [dict(row) for row in rows.mappings()]
