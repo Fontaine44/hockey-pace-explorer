@@ -201,7 +201,7 @@ export function GameReviewPage() {
           }}
         >
           <ChartCard fill className="col-span-2 pt-5">
-            <div className="grid h-full min-h-0 grid-cols-2 gap-8">
+            <div className="grid h-full min-h-0 grid-cols-2 gap-12">
               <div className="flex min-h-0 min-w-0 flex-col gap-6">
                 <div
                   className="shrink-0 space-y-3 pt-4"
@@ -363,8 +363,11 @@ export function GameReviewPage() {
                   ref={tableContainer}
                   className="min-h-0 flex-1 overflow-auto rounded-md border"
                 >
-                  <Table aria-label="Possessions for the selected period">
-                    <TableHeader className="sticky top-0 z-10 bg-card">
+                  <Table
+                    aria-label="Possessions for the selected period"
+                    className="text-xs"
+                  >
+                    <TableHeader className="sticky top-0 z-10 bg-accent text-sm [&_th]:text-black">
                       <TableRow>
                         <TableHead>Team</TableHead>
                         <TableHead>Clock</TableHead>

@@ -54,29 +54,88 @@ def main() -> None:
     )
 
     events = pd.read_parquet(PROJECT_ROOT / "data/processed/events_augmented.parquet")
-    columns = [
+    event_columns = [
         "event_id",
         "game_id",
+        "team_id",
+        "opponent_team_id",
+        "player_id",
+        "player_2_id",
         "period",
-        "possession_id",
-        "possession_team_id",
         "clock_seconds",
-        "source_dataset",
-        "event",
         "team_goals",
         "opponent_goals",
         "team_skaters",
         "opponent_skaters",
+        "event",
+        "x",
+        "y",
+        "detail_1",
+        "detail_2",
+        "detail_3",
+        "detail_4",
         "is_home",
+        "source_dataset",
+        "event_team_zone",
+        "is_5v5",
+        "score_differential",
+        "modeled_clock_seconds",
+        "possession_team_id",
+        "possession_id",
     ]
-    if not set(columns).issubset(events.columns):
-        raise ValueError("events_augmented: missing possession columns")
-    events = events[columns].sort_values("event_id", kind="stable")
-    if events.isna().any().any():
-        raise ValueError("events_augmented: required possession values are missing")
-    for column in columns[:5]:
+    if not set(event_columns).issubset(events.columns):
+        raise ValueError("events_augmented: missing required event columns")
+    events = events[event_columns].sort_values("event_id", kind="stable")
+    nullable_columns = {
+        "player_2_id",
+        "x",
+        "y",
+        "detail_1",
+        "detail_2",
+        "detail_3",
+        "detail_4",
+        "event_team_zone",
+    }
+    required = [column for column in event_columns if column not in nullable_columns]
+    if events[required].isna().any().any():
+        raise ValueError("events_augmented: required event values are missing")
+    for column in [
+        "event_id",
+        "game_id",
+        "team_id",
+        "opponent_team_id",
+        "player_id",
+        "player_2_id",
+        "period",
+        "possession_id",
+        "possession_team_id",
+        "score_differential",
+    ]:
         if not is_integer_dtype(events[column]):
             raise ValueError(f"events_augmented: {column} must contain integers")
+    for column in [
+        "source_dataset",
+        "event_team_zone",
+        "detail_1",
+        "detail_2",
+        "detail_3",
+        "detail_4",
+    ]:
+        if not events[column].dropna().map(lambda value: isinstance(value, str)).all():
+            raise ValueError(f"events_augmented: {column} must contain strings")
+    for column in ["clock_seconds", "modeled_clock_seconds", "x", "y"]:
+        if (
+            not events[column]
+            .dropna()
+            .map(
+                lambda value: (
+                    isinstance(value, (int, float))
+                    and -float("inf") < value < float("inf")
+                )
+            )
+            .all()
+        ):
+            raise ValueError(f"events_augmented: invalid {column}")
     if not events.event_id.is_unique:
         raise ValueError("events_augmented: duplicate event IDs")
     if not events.event.map(lambda value: isinstance(value, str) and bool(value)).all():
@@ -86,8 +145,9 @@ def main() -> None:
     for column in ["team_goals", "opponent_goals", "team_skaters", "opponent_skaters"]:
         if not is_integer_dtype(events[column]) or not events[column].ge(0).all():
             raise ValueError(f"events_augmented: invalid {column}")
-    if not is_bool_dtype(events.is_home):
-        raise ValueError("events_augmented: is_home must contain booleans")
+    for column in ["is_home", "is_5v5"]:
+        if not is_bool_dtype(events[column]):
+            raise ValueError(f"events_augmented: {column} must contain booleans")
     events["home_score"] = events.team_goals.where(
         events.is_home, events.opponent_goals
     )
@@ -228,6 +288,22 @@ def main() -> None:
     possessions["away_score"] += (
         possessions.contains_goal & possessions.possession_team_id.eq(away)
     ).astype(int)
+    event_home = events.game_id.map(game_lookup.home_team_id)
+    event_away = events.game_id.map(game_lookup.away_team_id)
+    if not (
+        (events.team_id.eq(event_home) & events.opponent_team_id.eq(event_away))
+        | (events.team_id.eq(event_away) & events.opponent_team_id.eq(event_home))
+    ).all():
+        raise ValueError("events_augmented: event teams do not match the game")
+    if not events.is_home.eq(events.team_id.eq(event_home)).all():
+        raise ValueError("events_augmented: is_home does not match the game")
+    player_sources = players.set_index("player_id").source_dataset
+    for column in ["player_id", "player_2_id"]:
+        present = events.loc[events[column].notna()]
+        if not present[column].isin(player_sources.index).all():
+            raise ValueError(f"events_augmented: {column} references an unknown player")
+        if not present.source_dataset.eq(present[column].map(player_sources)).all():
+            raise ValueError(f"events_augmented: {column} source dataset mismatch")
 
     team_sources = teams.set_index("team_id")["source_dataset"]
     for name, frame, column in [
@@ -317,6 +393,39 @@ def main() -> None:
                 );
                 CREATE INDEX possessions_game_period
                     ON possessions(game_id, period, start_event_id);
+                CREATE TABLE events (
+                    event_id INTEGER PRIMARY KEY,
+                    game_id INTEGER NOT NULL REFERENCES games(game_id),
+                    team_id INTEGER NOT NULL REFERENCES teams(team_id),
+                    opponent_team_id INTEGER NOT NULL REFERENCES teams(team_id),
+                    player_id INTEGER NOT NULL REFERENCES players(player_id),
+                    player_2_id INTEGER REFERENCES players(player_id),
+                    period INTEGER NOT NULL CHECK (period > 0),
+                    clock_seconds REAL NOT NULL CHECK (clock_seconds >= 0),
+                    team_goals INTEGER NOT NULL CHECK (team_goals >= 0),
+                    opponent_goals INTEGER NOT NULL CHECK (opponent_goals >= 0),
+                    team_skaters INTEGER NOT NULL CHECK (team_skaters >= 0),
+                    opponent_skaters INTEGER NOT NULL CHECK (opponent_skaters >= 0),
+                    event TEXT NOT NULL,
+                    x REAL,
+                    y REAL,
+                    detail_1 TEXT,
+                    detail_2 TEXT,
+                    detail_3 TEXT,
+                    detail_4 TEXT,
+                    is_home INTEGER NOT NULL CHECK (is_home IN (0, 1)),
+                    source_dataset TEXT NOT NULL,
+                    event_team_zone TEXT,
+                    is_5v5 INTEGER NOT NULL CHECK (is_5v5 IN (0, 1)),
+                    score_differential INTEGER NOT NULL,
+                    modeled_clock_seconds REAL NOT NULL,
+                    possession_team_id INTEGER NOT NULL REFERENCES teams(team_id),
+                    possession_id INTEGER NOT NULL REFERENCES possessions(possession_id)
+                );
+                CREATE INDEX events_possession
+                    ON events(possession_id, event_id);
+                CREATE INDEX events_game_period
+                    ON events(game_id, period, event_id);
             """)
             with connection:
                 connection.executemany(
@@ -386,13 +495,23 @@ def main() -> None:
                         for r in possessions.itertuples(index=False)
                     ),
                 )
+                # Convert pandas nullable values to None and native Python scalars.
+                event_rows = events[event_columns].astype(object)
+                event_rows = event_rows.where(event_rows.notna(), None)
+                connection.executemany(
+                    "INSERT INTO events VALUES "
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+                    "?, ?, ?, ?, ?, ?, ?)",
+                    event_rows.itertuples(index=False, name=None),
+                )
             if connection.execute("PRAGMA foreign_key_check").fetchall():
-                raise ValueError("Imported database contains invalid team references")
+                raise ValueError("Imported database contains invalid references")
             for name, frame in [
                 ("teams", teams),
                 ("players", players),
                 ("games", games),
                 ("possessions", possessions),
+                ("events", events),
             ]:
                 count = connection.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
                 if count != len(frame):
@@ -411,7 +530,8 @@ def main() -> None:
 
     print(
         f"Imported {len(teams)} teams, {len(players)} players, "
-        f"{len(games)} games, {len(possessions)} possessions into {database}"
+        f"{len(games)} games, {len(possessions)} possessions, "
+        f"{len(events)} events into {database}"
     )
 
 
