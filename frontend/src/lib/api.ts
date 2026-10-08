@@ -27,6 +27,7 @@ export interface Possession {
   end_clock_seconds: number;
   event_count: number;
   elapsed_seconds: number;
+  modeled_elapsed_seconds: number;
   speed_total_ft_s: number;
   pace_status: string;
   outcome: string;

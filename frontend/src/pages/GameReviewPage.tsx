@@ -200,7 +200,7 @@ export function GameReviewPage() {
           }}
         >
           <ChartCard fill className="col-span-2 pt-5">
-            <div className="grid h-full min-h-0 grid-cols-2 gap-4">
+            <div className="grid h-full min-h-0 grid-cols-2 gap-8">
               <div className="flex min-h-0 min-w-0 flex-col gap-2">
                 <h3 className="shrink-0 text-sm font-medium">
                   Selected sequence on rink
@@ -213,57 +213,60 @@ export function GameReviewPage() {
                 <RinkPlot className="flex-1" />
               </div>
               <div className="flex min-h-0 flex-col gap-3">
-                <div className="flex shrink-0 items-center justify-between gap-3">
+                <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3">
                   <h3 className="text-sm font-medium">Possessions</h3>
-                  <div className="flex items-center gap-3">
-                    <ButtonGroup aria-label="Possession navigation">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="cursor-pointer"
-                        aria-label="First possession"
-                        disabled={selectedIndex <= 0}
-                        onClick={() => selectPossession(0)}
-                      >
-                        <ChevronFirst aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="cursor-pointer"
-                        aria-label="Previous possession"
-                        disabled={selectedIndex <= 0}
-                        onClick={() => selectPossession(selectedIndex - 1)}
-                      >
-                        <ChevronLeft aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="cursor-pointer"
-                        aria-label="Next possession"
-                        disabled={
-                          selectedIndex < 0 ||
-                          selectedIndex >= possessions.length - 1
-                        }
-                        onClick={() => selectPossession(selectedIndex + 1)}
-                      >
-                        <ChevronRight aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="cursor-pointer"
-                        aria-label="Last possession"
-                        disabled={
-                          selectedIndex < 0 ||
-                          selectedIndex >= possessions.length - 1
-                        }
-                        onClick={() => selectPossession(possessions.length - 1)}
-                      >
-                        <ChevronLast aria-hidden="true" />
-                      </Button>
-                    </ButtonGroup>
+                  <ButtonGroup
+                    aria-label="Possession navigation"
+                    className="justify-self-center"
+                  >
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="cursor-pointer"
+                      aria-label="First possession"
+                      disabled={selectedIndex <= 0}
+                      onClick={() => selectPossession(0)}
+                    >
+                      <ChevronFirst aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="cursor-pointer"
+                      aria-label="Previous possession"
+                      disabled={selectedIndex <= 0}
+                      onClick={() => selectPossession(selectedIndex - 1)}
+                    >
+                      <ChevronLeft aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="cursor-pointer"
+                      aria-label="Next possession"
+                      disabled={
+                        selectedIndex < 0 ||
+                        selectedIndex >= possessions.length - 1
+                      }
+                      onClick={() => selectPossession(selectedIndex + 1)}
+                    >
+                      <ChevronRight aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="cursor-pointer"
+                      aria-label="Last possession"
+                      disabled={
+                        selectedIndex < 0 ||
+                        selectedIndex >= possessions.length - 1
+                      }
+                      onClick={() => selectPossession(possessions.length - 1)}
+                    >
+                      <ChevronLast aria-hidden="true" />
+                    </Button>
+                  </ButtonGroup>
+                  <div className="flex items-center justify-self-end gap-3">
                     <span className="text-sm font-medium">Period:</span>
                     <ToggleGroup
                       type="single"
@@ -298,9 +301,6 @@ export function GameReviewPage() {
                         <TableHead>Team</TableHead>
                         <TableHead>Clock</TableHead>
                         <TableHead className="text-right">
-                          Duration (s)
-                        </TableHead>
-                        <TableHead className="text-right">
                           Pace (ft/s)
                         </TableHead>
                         <TableHead>Outcome</TableHead>
@@ -326,10 +326,7 @@ export function GameReviewPage() {
                         >
                           <TableCell>{possession.team_name}</TableCell>
                           <TableCell className="whitespace-nowrap tabular-nums">
-                            {formatClock(possession.start_clock_seconds)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {(possession.elapsed_seconds ?? 0).toFixed(0)}
+                            {`${formatClock(possession.start_clock_seconds)}-${formatClock(possession.end_clock_seconds)}`}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             {(possession.speed_total_ft_s ?? 0).toFixed(1)}
@@ -342,7 +339,7 @@ export function GameReviewPage() {
                         !currentResult.data.length) && (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={4}
                             className="py-6 text-center text-muted-foreground"
                           >
                             <span
