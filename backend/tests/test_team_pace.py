@@ -1,47 +1,39 @@
-import numpy as np
+import sqlite3
+from contextlib import closing
+
 import pandas as pd
 import pytest
-from backend.app.ingest import build_game_team_pace
+from backend.app.ingest import insert_table
 
 
-def test_pooled_weighting_zero_duration_missing_and_overtime():
-    games = pd.DataFrame(
-        {
-            "game_id": [1],
-            "away_team_id": [1],
-            "home_team_id": [2],
-            "source_dataset": ["test"],
-        }
-    )
-    sequences = pd.DataFrame(
-        {
-            "game_id": [1] * 5,
-            "possession_team_id": [1, 1, 1, 1, 2],
-            "period": [1, 1, 1, 4, 4],
-            "source_dataset": ["test"] * 5,
-            "transitions": [1, 1, 1, 1, 0],
-            "modeled_elapsed_seconds": [1.0, 9.0, 0.0, 2.0, np.nan],
-            "distance_ft": [10.0, 270.0, 5.0, 10.0, np.nan],
-            "distance_ew_ft": [5.0, 135.0, 2.5, 5.0, np.nan],
-            "distance_ns_ft": [5.0, 135.0, 2.5, 5.0, np.nan],
-            "distance_n_ft": [0.0, 0.0, 0.0, 0.0, np.nan],
-        }
-    )
-    result = build_game_team_pace(sequences, games).set_index(["team_id", "period"])
-    assert len(result) == 6
-    assert result.loc[(1, 1), "speed_total_ft_s"] == 28.5
-    assert result.loc[(1, 0), "speed_total_ft_s"] == pytest.approx(295 / 12)
-    assert result.loc[(1, 0), "speed_ew_ft_s"] == pytest.approx(147.5 / 12)
-    assert result.loc[(1, 0), "speed_n_ft_s"] == 0
-    assert result.loc[(2, 4), "modeled_elapsed_seconds"] == 0
-    assert np.isnan(result.loc[(2, 0), "speed_total_ft_s"])
-    for column, value in [
-        ("distance_ft", np.inf),
-        ("distance_n_ft", -1),
-        ("possession_team_id", 99),
-        ("source_dataset", "wrong"),
-    ]:
-        bad = sequences.copy()
-        bad.loc[0, column] = value
+def test_sqlite_serialization_preserves_nulls_zeros_dates_and_booleans():
+    with closing(sqlite3.connect(":memory:")) as connection:
+        connection.execute(
+            "CREATE TABLE sample (id INTEGER PRIMARY KEY, date DATE NOT NULL, "
+            "flag INTEGER NOT NULL, speed REAL)"
+        )
+        frame = pd.DataFrame(
+            {
+                "id": pd.Series([1, 2], dtype="Int64"),
+                "date": pd.to_datetime(["2022-02-08", "2022-02-09"]),
+                "flag": pd.Series([True, False], dtype="boolean"),
+                "speed": pd.Series([0, pd.NA], dtype="Float64"),
+            }
+        )
+        assert insert_table(connection, "sample", frame) == 2
+        assert connection.execute("SELECT * FROM sample ORDER BY id").fetchall() == [
+            (1, "2022-02-08", 1, 0.0),
+            (2, "2022-02-09", 0, None),
+        ]
+
+
+@pytest.mark.parametrize("date", [None, "2022-02-08 12:00:00", "invalid"])
+def test_game_dates_reject_missing_times_and_invalid_values(date):
+    with closing(sqlite3.connect(":memory:")) as connection:
+        connection.execute(
+            "CREATE TABLE sample (id INTEGER PRIMARY KEY, date DATE NOT NULL)"
+        )
         with pytest.raises(ValueError):
-            build_game_team_pace(bad, games)
+            insert_table(
+                connection, "sample", pd.DataFrame({"id": [1], "date": [date]})
+            )

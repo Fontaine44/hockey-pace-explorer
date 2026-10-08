@@ -3,9 +3,9 @@
   "inputs": [
     "events_augmented.parquet",
     "event_transitions.parquet",
+    "possession_context.parquet",
     "teams.parquet",
-    "games.parquet",
-    "players.parquet"
+    "games.parquet"
   ],
   "units": {
     "distance": "feet",
@@ -20,117 +20,78 @@
     "cells": 668,
     "corners": "Three removed cells per corner; approximate layout",
     "allocation": "Equal distance/time share across all touched cells, including edge and corner touches",
-    "smoothing_sigma_cells": 0.5,
-    "smoothing": "Normalized Gaussian speed smoothing before subtraction; missing cells preserved",
-    "perspective": "Attacking team for both attacking and defending roles",
-    "baseline": "Source pool includes each eligible 5v5 transition once, including the team being compared"
+    "smoothing_sigma_cells": 2,
+    "smoothing": "Gaussian distance / Gaussian modeled time; constant-zero boundaries; truncate 4; original zero-exposure cells missing",
+    "truncate": 4,
+    "boundary_mode": "constant",
+    "situations": "all",
+    "storage": "Final whole-game team maps only; no replay contributions",
+    "perspective": "Original attacking coordinates for both teams; attacking net on the right",
+    "components": "Total, east-west, north-south, north-only"
   },
-  "players": "Equal endpoint shares; identical players receive full share. Missing shares stay unattributed. Allocated time is not ice time; no WOWY or position adjustment.",
+  "database_tables": [
+    "possessions",
+    "game_team_pace",
+    "polygrid_cells",
+    "game_polygrid"
+  ],
+  "team_game_pace": "All situations; pooled distance / modeled time; full game sums periods; zero-time distance preserved",
   "tables": [
     {
       "file": "pace_transitions.parquet",
       "rows": 63298,
-      "columns": 25,
+      "columns": 24,
       "grain": "Transition within possession; eligibility, recorded and modeled timing, speeds",
-      "bytes": 2383940
+      "bytes": 2382062
     },
     {
       "file": "pace_zonal_transitions.parquet",
       "rows": 63298,
-      "columns": 31,
+      "columns": 30,
       "grain": "Transition with destination zone and zone segment",
-      "bytes": 2607472
+      "bytes": 2608209
     },
     {
       "file": "pace_zonal_segments.parquet",
       "rows": 21789,
-      "columns": 21,
+      "columns": 20,
       "grain": "Possession x zone segment",
-      "bytes": 720033
+      "bytes": 721606
     },
     {
       "file": "pace_sequences.parquet",
       "rows": 16046,
-      "columns": 22,
-      "grain": "Possession, including sequences without calculable pace",
-      "bytes": 566841
+      "columns": 20,
+      "grain": "Possession, including possessions without calculable pace",
+      "bytes": 564913
     },
     {
-      "file": "pace_team_games.parquet",
-      "rows": 136,
-      "columns": 19,
-      "grain": "Source x game x team x role; eligible 5v5",
-      "bytes": 19072
+      "file": "possessions.parquet",
+      "rows": 16046,
+      "columns": 20,
+      "grain": "Database possession with context and pace; all situations",
+      "bytes": 518860
     },
     {
-      "file": "pace_teams.parquet",
-      "rows": 40,
-      "columns": 18,
-      "grain": "Source x team x role; eligible 5v5",
-      "bytes": 15189
+      "file": "game_team_pace.parquet",
+      "rows": 282,
+      "columns": 12,
+      "grain": "Database game x team x period; all situations; period 0 is full game",
+      "bytes": 27772
     },
     {
-      "file": "pace_team_zones.parquet",
-      "rows": 120,
-      "columns": 19,
-      "grain": "Source x team x role x zone; eligible 5v5 zone segments",
-      "bytes": 22549
-    },
-    {
-      "file": "pace_polygrid_cells.parquet",
+      "file": "polygrid_cells.parquet",
       "rows": 668,
       "columns": 7,
-      "grain": "Cell geometry; 668 approximate rink cells",
-      "bytes": 9178
+      "grain": "Database cell geometry; 668 rink cells",
+      "bytes": 9436
     },
     {
-      "file": "pace_polygrid_contributions.parquet",
-      "rows": 475457,
-      "columns": 15,
-      "grain": "Valid transition x cell; allocated distance and time; all strengths",
-      "bytes": 3479067
-    },
-    {
-      "file": "pace_polygrid_sources.parquet",
-      "rows": 2004,
-      "columns": 25,
-      "grain": "Source x cell; eligible 5v5",
-      "bytes": 291150
-    },
-    {
-      "file": "pace_polygrid_teams.parquet",
-      "rows": 26720,
-      "columns": 28,
-      "grain": "Source x team x role x cell; eligible 5v5",
-      "bytes": 3590521
-    },
-    {
-      "file": "pace_polygrid_differentials.parquet",
-      "rows": 26720,
-      "columns": 44,
-      "grain": "Source x team x role x cell; raw and smoothed team-minus-source pace",
-      "bytes": 5813865
-    },
-    {
-      "file": "pace_polygrid_unassigned.parquet",
-      "rows": 0,
-      "columns": 28,
-      "grain": "Valid transition without grid coverage; all strengths",
-      "bytes": 13442
-    },
-    {
-      "file": "pace_player_contributions.parquet",
-      "rows": 62533,
-      "columns": 16,
-      "grain": "Eligible 5v5 zone transition x player share, including unattributed shares",
-      "bytes": 1191648
-    },
-    {
-      "file": "pace_player_zones.parquet",
-      "rows": 1211,
-      "columns": 19,
-      "grain": "Source x team x player x zone; individual involvement pace",
-      "bytes": 107627
+      "file": "game_polygrid.parquet",
+      "rows": 45424,
+      "columns": 8,
+      "grain": "Database final game x team x cell; all situations; four smoothed speeds",
+      "bytes": 2237434
     }
   ]
 }
