@@ -26,9 +26,26 @@ export function createPolygridTrace(
     if (cell.team_id !== teamId) continue;
     const row = cell.grid_row;
     const col = cell.grid_column;
-    z[row][col] = cell[paceType] ?? 0;
+    z[row][col] = cell[paceType];
     exposure[row][col] = cell.modeled_elapsed_seconds;
-    hasData = true;
+    if (cell[paceType] !== null) hasData = true;
+  }
+  // Fill missing valid cells from original neighbors only, without cascading.
+  // Cells absent from the geometry (removed corners) remain transparent.
+  const original = z.map((row) => [...row]);
+  for (const cell of cells) {
+    if (cell.team_id !== teamId || cell[paceType] !== null) continue;
+    const neighbors: number[] = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dy === 0 && dx === 0) continue;
+        const value = original[cell.grid_row + dy]?.[cell.grid_column + dx];
+        if (value != null) neighbors.push(value);
+      }
+    }
+    if (neighbors.length) {
+      z[cell.grid_row][cell.grid_column] = Math.min(...neighbors);
+    }
   }
   return {
     max,
