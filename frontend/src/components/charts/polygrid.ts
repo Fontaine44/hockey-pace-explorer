@@ -47,7 +47,7 @@ export function createPolygridTrace(
       zsmooth: false,
       hoverongaps: false,
       hovertemplate:
-        "Pace: %{z:.2f} ft/s<br>Modeled exposure: %{customdata:.2f} s<extra></extra>",
+        "Pace: %{z:.2f} ft/s<extra></extra>",
     },
   };
 }

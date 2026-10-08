@@ -60,6 +60,34 @@ class PossessionEventResponse(BaseModel):
     detail_2: str | None
 
 
+class TeamPaceResponse(BaseModel):
+    team_id: int
+    period: int | None
+    modeled_elapsed_seconds: float
+    speed_total_ft_s: float | None
+    speed_ew_ft_s: float | None
+    speed_ns_ft_s: float | None
+    speed_n_ft_s: float | None
+
+
+@router.get("/games/{game_id}/pace", response_model=list[TeamPaceResponse])
+def get_game_pace(game_id: int, db: Annotated[Session, Depends(get_db)]):
+    if not db.execute(
+        text("SELECT 1 FROM games WHERE game_id = :id"), {"id": game_id}
+    ).first():
+        raise HTTPException(status_code=404, detail="Game not found")
+    rows = db.execute(
+        text("""
+        SELECT team_id, NULLIF(period, 0) AS period, modeled_elapsed_seconds,
+               speed_total_ft_s, speed_ew_ft_s, speed_ns_ft_s, speed_n_ft_s
+        FROM game_team_pace WHERE game_id = :game_id
+        ORDER BY period, team_id
+    """),
+        {"game_id": game_id},
+    )
+    return [dict(row) for row in rows.mappings()]
+
+
 class PolygridCellResponse(BaseModel):
     team_id: int
     cell_id: int

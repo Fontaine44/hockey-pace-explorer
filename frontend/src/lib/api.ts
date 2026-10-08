@@ -4,6 +4,28 @@ export interface HealthResponse {
   version: string;
 }
 
+export interface TeamPace {
+  team_id: number;
+  period: number | null;
+  modeled_elapsed_seconds: number;
+  speed_total_ft_s: number | null;
+  speed_ew_ft_s: number | null;
+  speed_ns_ft_s: number | null;
+  speed_n_ft_s: number | null;
+}
+
+export async function getGamePace(
+  gameId: string,
+  signal?: AbortSignal,
+): Promise<TeamPace[]> {
+  const response = await fetch(`${getApiBaseUrl()}/api/games/${gameId}/pace`, {
+    signal,
+  });
+  if (!response.ok)
+    throw new Error(`Pace request failed with status ${response.status}`);
+  return (await response.json()) as TeamPace[];
+}
+
 export interface PolygridCell {
   team_id: number;
   cell_id: number;

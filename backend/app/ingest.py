@@ -167,6 +167,89 @@ def build_game_polygrids(
     ]
 
 
+def build_game_team_pace(sequences: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
+    """Pool all situations by period; derive game totals from those same sums."""
+    distances = ["distance_ft", "distance_ew_ft", "distance_ns_ft", "distance_n_ft"]
+    speeds = ["speed_total_ft_s", "speed_ew_ft_s", "speed_ns_ft_s", "speed_n_ft_s"]
+    allocations = ["modeled_elapsed_seconds", *distances]
+    required = [
+        "game_id",
+        "possession_team_id",
+        "period",
+        "source_dataset",
+        "transitions",
+        *allocations,
+    ]
+    if not set(required).issubset(sequences.columns):
+        raise ValueError("pace_sequences: missing summary columns")
+    lookup = games.set_index("game_id")
+    for column in ["game_id", "possession_team_id", "period", "transitions"]:
+        if sequences[column].isna().any() or not is_integer_dtype(sequences[column]):
+            raise ValueError(f"pace_sequences: invalid {column}")
+    if not sequences.period.gt(0).all() or not sequences.transitions.ge(0).all():
+        raise ValueError("pace_sequences: invalid period or transition count")
+    if (
+        not sequences.game_id.isin(lookup.index).all()
+        or not sequences.source_dataset.eq(
+            sequences.game_id.map(lookup.source_dataset)
+        ).all()
+    ):
+        raise ValueError("pace_sequences: game/source mismatch")
+    if not (
+        sequences.possession_team_id.eq(sequences.game_id.map(lookup.home_team_id))
+        | sequences.possession_team_id.eq(sequences.game_id.map(lookup.away_team_id))
+    ).all():
+        raise ValueError("pace_sequences: team is not in game")
+    values = sequences[allocations].to_numpy(dtype=float, na_value=np.nan)
+    present = ~np.isnan(values)
+    if not np.isfinite(values[present]).all() or (values[present] < 0).any():
+        raise ValueError("pace_sequences: invalid summary distance or time")
+    if sequences.loc[sequences.transitions.gt(0), allocations].isna().any().any():
+        raise ValueError("pace_sequences: missing transition allocations")
+    work = sequences.copy()
+    work.loc[work.transitions.eq(0), allocations] = 0
+    keys = ["game_id", "possession_team_id", "period"]
+    pooled = work.groupby(keys)[allocations].sum()
+    index = []
+    for game in games.itertuples(index=False):
+        periods = sorted(
+            sequences.loc[sequences.game_id.eq(game.game_id), "period"].unique()
+        )
+        index.extend(
+            (game.game_id, team, period)
+            for team in [game.away_team_id, game.home_team_id]
+            for period in periods
+        )
+    periods = pooled.reindex(
+        pd.MultiIndex.from_tuples(index, names=keys), fill_value=0
+    ).reset_index()
+    full = periods.groupby(keys[:2])[allocations].sum().reset_index()
+    # Even a game without sequences gets a zero-exposure full-game record per team.
+    teams = pd.MultiIndex.from_tuples(
+        [
+            (g.game_id, t)
+            for g in games.itertuples(index=False)
+            for t in [g.away_team_id, g.home_team_id]
+        ],
+        names=keys[:2],
+    )
+    full = full.set_index(keys[:2]).reindex(teams, fill_value=0).reset_index()
+    full["period"] = 0
+    result = pd.concat([full, periods], ignore_index=True).rename(
+        columns={"possession_team_id": "team_id"}
+    )
+    if not np.isfinite(result[allocations].to_numpy(dtype=float)).all():
+        raise ValueError("pace_sequences: non-finite pooled totals")
+    denominator = result.modeled_elapsed_seconds.where(
+        result.modeled_elapsed_seconds.gt(0)
+    )
+    for distance, speed in zip(distances, speeds, strict=True):
+        result[speed] = result[distance] / denominator
+        if np.isinf(result[speed].to_numpy(dtype=float, na_value=np.nan)).any():
+            raise ValueError("pace_sequences: non-finite pooled speed")
+    return result[["game_id", "team_id", "period", *allocations, *speeds]]
+
+
 def main() -> None:
     """Load the exports into a fresh database, then replace the old file."""
     teams = read_table("teams", ["team_id", "source_dataset", "team_name"], ["team_id"])
@@ -330,6 +413,7 @@ def main() -> None:
     possessions = pd.read_parquet(
         PROJECT_ROOT / "data/processed/pace_sequences.parquet"
     )
+    game_team_pace = build_game_team_pace(possessions, games)
     if not set(pace_columns).issubset(possessions.columns):
         raise ValueError("pace_sequences: missing required columns")
     possessions = possessions[pace_columns].rename(columns={"events": "event_count"})
@@ -562,6 +646,22 @@ def main() -> None:
                     ON events(possession_id, event_id);
                 CREATE INDEX events_game_period
                     ON events(game_id, period, event_id);
+                CREATE TABLE game_team_pace (
+                    game_id INTEGER NOT NULL REFERENCES games(game_id),
+                    team_id INTEGER NOT NULL REFERENCES teams(team_id),
+                    period INTEGER NOT NULL CHECK (period >= 0),
+                    modeled_elapsed_seconds REAL NOT NULL
+                        CHECK (modeled_elapsed_seconds >= 0),
+                    distance_ft REAL NOT NULL CHECK (distance_ft >= 0),
+                    distance_ew_ft REAL NOT NULL CHECK (distance_ew_ft >= 0),
+                    distance_ns_ft REAL NOT NULL CHECK (distance_ns_ft >= 0),
+                    distance_n_ft REAL NOT NULL CHECK (distance_n_ft >= 0),
+                    speed_total_ft_s REAL CHECK (speed_total_ft_s >= 0),
+                    speed_ew_ft_s REAL CHECK (speed_ew_ft_s >= 0),
+                    speed_ns_ft_s REAL CHECK (speed_ns_ft_s >= 0),
+                    speed_n_ft_s REAL CHECK (speed_n_ft_s >= 0),
+                    PRIMARY KEY (game_id, team_id, period)
+                );
                 CREATE TABLE polygrid_cells (
                     cell_id INTEGER PRIMARY KEY,
                     grid_column INTEGER NOT NULL CHECK (grid_column BETWEEN 0 AND 39),
@@ -675,6 +775,13 @@ def main() -> None:
                     ].itertuples(index=False, name=None),
                 )
                 polygrid_rows = game_polygrid.astype(object)
+                pace_rows = game_team_pace.astype(object)
+                pace_rows = pace_rows.where(pace_rows.notna(), None)
+                connection.executemany(
+                    "INSERT INTO game_team_pace VALUES "
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    pace_rows.itertuples(index=False, name=None),
+                )
                 polygrid_rows = polygrid_rows.where(polygrid_rows.notna(), None)
                 connection.executemany(
                     "INSERT INTO game_polygrid VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -690,6 +797,7 @@ def main() -> None:
                 ("events", events),
                 ("polygrid_cells", cells),
                 ("game_polygrid", game_polygrid),
+                ("game_team_pace", game_team_pace),
             ]:
                 count = connection.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
                 if count != len(frame):
@@ -710,7 +818,8 @@ def main() -> None:
         f"Imported {len(teams)} teams, {len(players)} players, "
         f"{len(games)} games, {len(possessions)} possessions, "
         f"{len(events)} events, {len(cells)} polygrid cells, "
-        f"{len(game_polygrid)} game polygrid rows into {database}"
+        f"{len(game_polygrid)} game polygrid rows, "
+        f"{len(game_team_pace)} team pace summaries into {database}"
     )
 
 

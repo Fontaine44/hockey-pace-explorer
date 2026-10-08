@@ -7,7 +7,12 @@ import numpy as np
 import pandas as pd
 import pytest
 from backend.app import ingest
-from backend.app.api.routes.games import PolygridCellResponse, get_game_polygrid
+from backend.app.api.routes.games import (
+    PolygridCellResponse,
+    TeamPaceResponse,
+    get_game_pace,
+    get_game_polygrid,
+)
 from fastapi import HTTPException
 from scipy.ndimage import gaussian_filter
 from sqlalchemy import create_engine
@@ -94,6 +99,37 @@ def test_full_import_repeat_failure_and_endpoint(tmp_path, monkeypatch):
             == 668
         )
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+        sequences = pd.read_parquet(
+            ingest.PROJECT_ROOT / "data/processed/pace_sequences.parquet"
+        )
+        expected = sequences.groupby(["game_id", "possession_team_id", "period"])[
+            [
+                "modeled_elapsed_seconds",
+                "distance_ft",
+                "distance_ew_ft",
+                "distance_ns_ft",
+                "distance_n_ft",
+            ]
+        ].sum()
+        actual_pace = pd.read_sql_query(
+            "SELECT * FROM game_team_pace WHERE period > 0", connection
+        )
+        actual_pace = actual_pace.set_index(
+            ["game_id", "team_id", "period"]
+        ).sort_index()
+        assert np.allclose(
+            actual_pace[expected.columns].to_numpy(float),
+            expected.sort_index().to_numpy(float),
+        )
+        full = pd.read_sql_query(
+            "SELECT * FROM game_team_pace WHERE period = 0", connection
+        ).set_index(["game_id", "team_id"])
+        period_totals = actual_pace.groupby(level=[0, 1])[expected.columns].sum()
+        assert np.allclose(
+            full.sort_index()[expected.columns].to_numpy(float),
+            period_totals.sort_index().to_numpy(float),
+        )
+        assert len(full) == 68
         contributions = pd.read_parquet(
             ingest.PROJECT_ROOT / "data/processed/pace_polygrid_contributions.parquet"
         )
@@ -124,6 +160,26 @@ def test_full_import_repeat_failure_and_endpoint(tmp_path, monkeypatch):
     assert hashlib.sha256(database.read_bytes()).digest() == before
     engine = create_engine(f"sqlite:///{database.as_posix()}")
     with Session(engine) as session:
+        pace = get_game_pace(16, session)
+        assert len(pace) == 8
+        assert {r["team_id"] for r in pace} == {8, 9}
+        assert [(r["period"] or 0, r["team_id"]) for r in pace] == sorted(
+            (r["period"] or 0, r["team_id"]) for r in pace
+        )
+        for record in pace:
+            TeamPaceResponse.model_validate(record)
+        with pytest.raises(HTTPException) as missing:
+            get_game_pace(999999, session)
+        assert missing.value.status_code == 404
+        session.connection().exec_driver_sql(
+            "UPDATE game_team_pace SET speed_total_ft_s = NULL "
+            "WHERE game_id=16 AND period=0"
+        )
+        assert get_game_pace(16, session)[0]["speed_total_ft_s"] is None
+        session.connection().exec_driver_sql(
+            "DELETE FROM game_team_pace WHERE game_id=16"
+        )
+        assert get_game_pace(16, session) == []
         records = get_game_polygrid(16, session)
         assert len(records) == 1336
         assert len({r["team_id"] for r in records}) == 2

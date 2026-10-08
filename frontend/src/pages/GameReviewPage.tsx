@@ -1,5 +1,6 @@
 import { ChartCard } from "@/components/charts/ChartCard";
 import { GamePolygridPanel } from "@/components/charts/GamePolygridPanel";
+import { GameTeamPacePanel } from "@/components/charts/GameTeamPacePanel";
 import { RinkPlot } from "@/components/charts/RinkPlot";
 import {
   createRinkEventPlot,
@@ -492,12 +493,7 @@ export function GameReviewPage() {
             </div>
           </ChartCard>
           <GamePolygridPanel game={selectedGame} />
-          <ChartCard fill title="Pace by team and period">
-            <p className="text-sm text-muted-foreground">
-              Placeholder for the independent pace selector and team comparison
-              across the full game and available periods.
-            </p>
-          </ChartCard>
+          <GameTeamPacePanel game={selectedGame} />
         </div>
       </section>
     </div>
