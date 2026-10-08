@@ -7,10 +7,12 @@ import pandas as pd
 import pytest
 from backend.app import ingest
 from backend.app.api.routes.games import (
+    GameResponse,
     PolygridCellResponse,
     TeamPaceResponse,
     get_game_pace,
     get_game_polygrid,
+    get_games,
 )
 from fastapi import HTTPException
 from sqlalchemy import create_engine
@@ -31,7 +33,7 @@ def database(tmp_path, monkeypatch):
 
 def test_final_exports_repeat_import_and_endpoints(database, monkeypatch):
     exports = {
-        "teams": ("teams", 20),
+        "teams": ("teams_augmented", 20),
         "players": ("players", 435),
         "games": ("games", 34),
         "possessions": ("possessions", 16046),
@@ -78,6 +80,15 @@ def test_final_exports_repeat_import_and_endpoints(database, monkeypatch):
 
     engine = create_engine(f"sqlite:///{database.as_posix()}")
     with Session(engine) as session:
+        for source in ["Olympics 2022", "NWHL", "Womens"]:
+            games = get_games(source, session)
+            assert games
+            for game in games:
+                GameResponse.model_validate(game)
+                for side in ["home", "away"]:
+                    color = game[f"{side}_team_color"]
+                    assert (color is not None) == (source == "Olympics 2022")
+                    assert not game[f"{side}_team_name"].endswith(("(O22)", "(O18)"))
         pace = get_game_pace(16, session)
         assert len(pace) == 8 and {r["team_id"] for r in pace} == {8, 9}
         assert [(r["period"] or 0, r["team_id"]) for r in pace] == sorted(
@@ -161,3 +172,40 @@ def test_invalid_export_preserves_database(database, monkeypatch, problem):
         ingest.main()
     assert hashlib.sha256(database.read_bytes()).digest() == before
     assert not list(database.parent.glob("ingest-*.db"))
+
+
+def test_augmented_team_names_colors_and_white_text_contrast():
+    processed = ingest.PROJECT_ROOT / "data/processed"
+    source = pd.read_parquet(processed / "teams.parquet")
+    augmented = pd.read_parquet(processed / "teams_augmented.parquet")
+    pd.testing.assert_series_equal(source["team_id"], augmented["team_id"])
+    pd.testing.assert_series_equal(
+        source["source_dataset"], augmented["source_dataset"]
+    )
+    expected_names = source["team_name"].str.replace(
+        r"\s*\(O(?:22|18)\)$", "", regex=True
+    )
+    pd.testing.assert_series_equal(expected_names, augmented["team_name"])
+    assert source["team_name"].str.endswith("(O22)").any()
+    assert augmented["team_name"].str.endswith("(O19)").sum() == 3
+    olympics = augmented["source_dataset"].eq("Olympics 2022")
+    expected = {
+        "Canada": "#C8102E",
+        "Finland": "#0077B6",
+        "Olympic Athletes from Russia": "#7B3294",
+        "Switzerland": "#A65F00",
+        "United States": "#002868",
+    }
+    assert augmented.loc[olympics].set_index("team_name")["color"].to_dict() == expected
+    assert augmented.loc[~olympics, "color"].isna().all()
+    assert str(augmented["color"].dtype) == "string"
+    for color in expected.values():
+        rgb = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        linear = [
+            v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in rgb
+        ]
+        luminance = sum(
+            v * weight
+            for v, weight in zip(linear, [0.2126, 0.7152, 0.0722], strict=True)
+        )
+        assert 1.05 / (luminance + 0.05) >= 4.5

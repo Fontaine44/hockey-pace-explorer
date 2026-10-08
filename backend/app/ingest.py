@@ -114,7 +114,7 @@ def check_relationships(connection: sqlite3.Connection) -> None:
 def main() -> None:
     """Import eight final exports, then replace the database after success."""
     processed = PROJECT_ROOT / "data" / "processed"
-    teams = pd.read_parquet(processed / "teams.parquet")
+    teams = pd.read_parquet(processed / "teams_augmented.parquet")
     players = pd.read_parquet(processed / "players.parquet")
     games = pd.read_parquet(processed / "games.parquet")
     possessions = pd.read_parquet(processed / "possessions.parquet")
@@ -157,7 +157,8 @@ def main() -> None:
                 CREATE TABLE teams (
                     team_id INTEGER PRIMARY KEY,
                     source_dataset TEXT NOT NULL,
-                    team_name TEXT NOT NULL
+                    team_name TEXT NOT NULL,
+                    color TEXT
                 );
                 CREATE TABLE players (
                     player_id INTEGER PRIMARY KEY,

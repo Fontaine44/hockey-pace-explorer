@@ -1,5 +1,6 @@
 ﻿import type { Annotations, Data } from "plotly.js";
-import type { PossessionEvent } from "@/lib/api";
+import { getTeamColor } from "@/lib/team-colors";
+import type { Game, PossessionEvent } from "@/lib/api";
 
 export const EVENT_MARKERS = {
   "Puck Recovery": "diamond",
@@ -64,10 +65,8 @@ function eventHover(event: PossessionEvent, number: number): string {
   ].join("<br>");
 }
 
-export function createRinkEventPlot(
-  events: PossessionEvent[],
-  homeTeamId: number,
-) {
+export function createRinkEventPlot(events: PossessionEvent[], game: Game) {
+  const homeTeamId = game.home_team_id;
   const ordered = [...events].sort((a, b) => a.event_id - b.event_id);
   const coordinates = ordered.map((event) => {
     if (event.x === null || event.y === null) return { x: 100, y: 42.5 };
@@ -76,7 +75,7 @@ export function createRinkEventPlot(
       : { x: event.x, y: event.y };
   });
   const teamColor = (teamId: number) =>
-    teamId === homeTeamId ? "#b91c1c" : "#047857";
+    getTeamColor(game, teamId === homeTeamId ? "home" : "away");
   const validPosition = (event: PossessionEvent) =>
     event.x !== null && event.y !== null;
   const traces: Data[] = [];

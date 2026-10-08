@@ -58,6 +58,8 @@ export interface Game {
   away_team_id: number;
   home_team_name: string;
   away_team_name: string;
+  home_team_color: string | null;
+  away_team_color: string | null;
   source_dataset: string;
   periods: number[];
 }

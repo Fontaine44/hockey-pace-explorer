@@ -1,3 +1,4 @@
+import { getTeamColor } from "@/lib/team-colors";
 import type { Data } from "plotly.js";
 import type { Game, TeamPace } from "@/lib/api";
 import type { PaceType } from "./polygrid";
@@ -22,8 +23,16 @@ export function createTeamPaceTraces(
   );
   const missing: string[] = [];
   const traces: Data[] = [
-    { id: game.away_team_id, name: game.away_team_name, color: "#047857" },
-    { id: game.home_team_id, name: game.home_team_name, color: "#b91c1c" },
+    {
+      id: game.away_team_id,
+      name: game.away_team_name,
+      color: getTeamColor(game, "away"),
+    },
+    {
+      id: game.home_team_id,
+      name: game.home_team_name,
+      color: getTeamColor(game, "home"),
+    },
   ].map((team) => {
     const rows = categories.map((period) =>
       data.find((row) => row.team_id === team.id && row.period === period),

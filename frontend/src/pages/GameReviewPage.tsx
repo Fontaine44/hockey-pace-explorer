@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { getTeamColor } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -94,7 +95,7 @@ export function GameReviewPage() {
   const rinkPlot = useMemo(
     () =>
       currentEvents?.data.length && selectedGame
-        ? createRinkEventPlot(currentEvents.data, selectedGame.home_team_id)
+        ? createRinkEventPlot(currentEvents.data, selectedGame)
         : EMPTY_PLOT,
     [currentEvents, selectedGame],
   );
@@ -299,7 +300,10 @@ export function GameReviewPage() {
                   >
                     <div className="flex items-stretch divide-x divide-white/25 overflow-hidden rounded-sm border border-slate-700 bg-slate-900 text-sm text-white shadow-md">
                       <span
-                        className="min-w-0 flex-1 truncate bg-gradient-to-r from-emerald-900 to-emerald-700 px-3 py-2 text-center font-bold uppercase tracking-wide"
+                        className="min-w-0 flex-1 truncate px-3 py-2 text-center font-bold uppercase tracking-wide"
+                        style={{
+                          backgroundColor: getTeamColor(selectedGame, "away"),
+                        }}
                         title={selectedGame?.away_team_name}
                       >
                         {selectedGame?.away_team_name ?? "\u00a0"}
@@ -336,7 +340,10 @@ export function GameReviewPage() {
                         {selectedPossession?.home_score ?? "\u00a0"}
                       </span>
                       <span
-                        className="min-w-0 flex-1 truncate bg-gradient-to-r from-red-700 to-red-900 px-3 py-2 text-center font-bold uppercase tracking-wide"
+                        className="min-w-0 flex-1 truncate px-3 py-2 text-center font-bold uppercase tracking-wide"
+                        style={{
+                          backgroundColor: getTeamColor(selectedGame, "home"),
+                        }}
                         title={selectedGame?.home_team_name}
                       >
                         {selectedGame?.home_team_name ?? "\u00a0"}

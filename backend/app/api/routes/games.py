@@ -20,6 +20,8 @@ class GameResponse(BaseModel):
     away_team_id: int
     home_team_name: str
     away_team_name: str
+    home_team_color: str | None
+    away_team_color: str | None
     source_dataset: str
     periods: list[int]
 
@@ -133,7 +135,9 @@ def get_games(
         text("""
             SELECT g.game_id, g.game_date, g.home_team_id, g.away_team_id,
                    home.team_name AS home_team_name,
-                   away.team_name AS away_team_name, g.source_dataset
+                   away.team_name AS away_team_name,
+                   home.color AS home_team_color, away.color AS away_team_color,
+                   g.source_dataset
             FROM games AS g
             JOIN teams AS home ON home.team_id = g.home_team_id
             JOIN teams AS away ON away.team_id = g.away_team_id
