@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChartCard } from "@/components/charts/ChartCard";
+import { PanelCard } from "@/components-custom/PanelCard";
 import { SpatialPolygrid } from "@/components/charts/SpatialPolygrid";
 import { PACE_TYPES, type PaceType } from "@/components/charts/polygrid";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { getGamePolygrid, type Game, type PolygridCell } from "@/lib/api";
 
 export function GamePolygridPanel({ game }: { game: Game | undefined }) {
   return (
-    <ChartCard fill title="Pace spatial polygrid">
+    <PanelCard fill title="Pace spatial polygrid">
       {game ? (
         <GamePolygridContent key={game.game_id} game={game} />
       ) : (
@@ -23,7 +23,7 @@ export function GamePolygridPanel({ game }: { game: Game | undefined }) {
           Select a game.
         </p>
       )}
-    </ChartCard>
+    </PanelCard>
   );
 }
 

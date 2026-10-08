@@ -1,4 +1,4 @@
-import { ChartCard } from "@/components/charts/ChartCard";
+import { PanelCard } from "@/components-custom/PanelCard";
 import { PageHeader } from "@/components-custom/PageHeader";
 
 export function PaceOutcomesPage() {
@@ -8,7 +8,7 @@ export function PaceOutcomesPage() {
         title="Pace & outcomes"
         description="Explore how puck-movement pace relates to observed outcomes."
       />
-      <ChartCard
+      <PanelCard
         title="Pace and outcomes analysis"
         empty
         emptyTitle="Analysis coming soon"

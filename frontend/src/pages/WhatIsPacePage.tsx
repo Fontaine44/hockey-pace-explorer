@@ -1,7 +1,7 @@
 import { Activity, CircleCheck, CircleX } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { ChartCard } from "@/components/charts/ChartCard";
+import { PanelCard } from "@/components-custom/PanelCard";
 import { MetricCard } from "@/components-custom/MetricCard";
 import { PageHeader } from "@/components-custom/PageHeader";
 import { getHealth, type HealthResponse } from "@/lib/api";
@@ -63,7 +63,7 @@ export function WhatIsPacePage() {
           loading={health.loading}
         />
       </section>
-      <ChartCard title="Puck-movement pace">
+      <PanelCard title="Puck-movement pace">
         <div className="space-y-4 text-sm text-muted-foreground">
           <p>
             Pace describes how quickly the puck moves, measured in feet per
@@ -89,7 +89,7 @@ export function WhatIsPacePage() {
             better performance, and missing measurements do not mean zero pace.
           </p>
         </div>
-      </ChartCard>
+      </PanelCard>
     </>
   );
 }

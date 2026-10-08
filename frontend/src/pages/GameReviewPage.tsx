@@ -1,4 +1,4 @@
-import { ChartCard } from "@/components/charts/ChartCard";
+import { PanelCard } from "@/components-custom/PanelCard";
 import { GamePolygridPanel } from "@/components/charts/GamePolygridPanel";
 import { GameTeamPacePanel } from "@/components/charts/GameTeamPacePanel";
 import { RinkPlot } from "@/components/charts/RinkPlot";
@@ -248,7 +248,7 @@ export function GameReviewPage() {
             height: "calc(200% + 2rem)",
           }}
         >
-          <ChartCard fill className="col-span-2 pt-5">
+          <PanelCard fill className="col-span-2 pt-5">
             <div className="grid h-full min-h-0 grid-cols-2 gap-16">
               <div className="flex min-h-0 min-w-0 flex-col gap-3">
                 <h3 className="shrink-0 text-sm font-medium">
@@ -491,7 +491,7 @@ export function GameReviewPage() {
                 </div>
               </div>
             </div>
-          </ChartCard>
+          </PanelCard>
           <GamePolygridPanel game={selectedGame} />
           <GameTeamPacePanel game={selectedGame} />
         </div>

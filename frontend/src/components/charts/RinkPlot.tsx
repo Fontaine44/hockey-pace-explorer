@@ -4,6 +4,7 @@ import type { Annotations, Data, Layout } from "plotly.js";
 
 import rinkImage from "@/assets/rink.png";
 import { cn } from "@/lib/utils";
+import { getPlotlyFontFamily } from "./plotly-style";
 
 interface RinkPlotProps {
   traces?: Data[];
@@ -79,6 +80,7 @@ export function RinkPlot({
             plot.style.height = `${height}px`;
 
             const layout: Partial<Layout> = {
+              font: { family: getPlotlyFontFamily(container!) },
               width,
               height,
               margin: { l: 0, r: 0, t: 0, b: 0, pad: 0 },

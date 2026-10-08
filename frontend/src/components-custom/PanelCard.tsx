@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-interface ChartCardProps {
+interface PanelCardProps {
   title?: string;
   description?: string;
   actions?: ReactNode;
@@ -26,7 +26,7 @@ interface ChartCardProps {
   className?: string;
 }
 
-export function ChartCard({
+export function PanelCard({
   title = "",
   description,
   actions,
@@ -38,7 +38,7 @@ export function ChartCard({
   children,
   fill = false,
   className,
-}: ChartCardProps) {
+}: PanelCardProps) {
   let content = children;
   if (loading)
     content = <LoadingState message={`Loading ${title.toLowerCase()}…`} />;

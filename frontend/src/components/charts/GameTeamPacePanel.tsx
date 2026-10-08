@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChartCard } from "./ChartCard";
+import { PanelCard } from "@/components-custom/PanelCard";
 import { TeamPaceChart } from "./TeamPaceChart";
 import { createTeamPaceTraces } from "./team-pace";
 import { PACE_TYPES, type PaceType } from "./polygrid";
@@ -14,7 +14,7 @@ import { getGamePace, type Game, type TeamPace } from "@/lib/api";
 
 export function GameTeamPacePanel({ game }: { game: Game | undefined }) {
   return (
-    <ChartCard fill title="Pace by team and period">
+    <PanelCard fill title="Pace by team and period">
       {game ? (
         <GameTeamPaceContent key={game.game_id} game={game} />
       ) : (
@@ -22,7 +22,7 @@ export function GameTeamPacePanel({ game }: { game: Game | undefined }) {
           Select a game.
         </p>
       )}
-    </ChartCard>
+    </PanelCard>
   );
 }
 

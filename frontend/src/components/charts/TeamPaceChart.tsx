@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import Plotly from "plotly.js-cartesian-dist-min";
 import type { Data, Layout } from "plotly.js";
+import { getPlotlyFontFamily } from "./plotly-style";
 
 export function TeamPaceChart({ traces }: { traces: Data[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +32,11 @@ export function TeamPaceChart({ traces }: { traces: Data[] }) {
               margin: { l: 55, r: 15, t: 25, b: 90 },
               paper_bgcolor: "rgba(0,0,0,0)",
               plot_bgcolor: "rgba(0,0,0,0)",
-              font: { family: "Arial, sans-serif", size: 12, color: "#0f172a" },
+              font: {
+                family: getPlotlyFontFamily(container!),
+                size: 12,
+                color: "#0f172a",
+              },
               legend: {
                 orientation: "h",
                 x: 0.5,
