@@ -43,6 +43,8 @@ import {
 } from "@/lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+const EMPTY_POSSESSIONS: Possession[] = [];
+
 function formatClock(seconds: number): string {
   const clock = Math.floor(seconds);
   return `${Math.floor(clock / 60)}:${String(clock % 60).padStart(2, "0")}`;
@@ -70,7 +72,7 @@ export function GameReviewPage() {
   const selectedGame = games.find(
     (game) => String(game.game_id) === selectedGameId,
   );
-  const possessions = currentResult?.data ?? [];
+  const possessions = currentResult?.data ?? EMPTY_POSSESSIONS;
   const selectedIndex =
     selection?.key === possessionKey
       ? possessions.findIndex(
@@ -123,6 +125,42 @@ export function GameReviewPage() {
     if (possession)
       setSelection({ key: possessionKey, id: possession.possession_id });
   }
+
+  useEffect(() => {
+    function navigatePossessions(event: KeyboardEvent) {
+      if (
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        (event.key !== "ArrowLeft" && event.key !== "ArrowRight") ||
+        selectedIndex < 0
+      )
+        return;
+      const target = event.target;
+      if (target instanceof Element) {
+        if (
+          target.closest(
+            'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"], [role="listbox"], [role="menu"], [role="dialog"], [role="radiogroup"]',
+          )
+        )
+          return;
+        // Let controls keep their native arrow behavior, except the possession arrows.
+        if (
+          target.closest("button, a") &&
+          !target.closest('[aria-label="Possession navigation"]')
+        )
+          return;
+      }
+      event.preventDefault();
+      const next =
+        possessions[selectedIndex + (event.key === "ArrowRight" ? 1 : -1)];
+      if (next) setSelection({ key: possessionKey, id: next.possession_id });
+    }
+    window.addEventListener("keydown", navigatePossessions);
+    return () => window.removeEventListener("keydown", navigatePossessions);
+  }, [possessions, selectedIndex, possessionKey]);
 
   useEffect(() => {
     const container = tableContainer.current;
