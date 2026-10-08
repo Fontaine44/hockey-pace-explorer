@@ -27,16 +27,20 @@ export function SpatialPolygrid({
   const traces = useMemo(() => [plot.trace], [plot]);
   return (
     <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
-      {plot.hasData ? (
-        <RinkPlot traces={traces} className="flex-1" />
-      ) : (
-        <div
-          role="status"
-          className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
-        >
-          No pace data for this team.
-        </div>
-      )}
+      <div className="relative min-h-0 flex-1">
+        <RinkPlot
+          traces={traces}
+          className={plot.hasData ? undefined : "invisible"}
+        />
+        {!plot.hasData && (
+          <div
+            role="status"
+            className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
+          >
+            No pace data for this team.
+          </div>
+        )}
+      </div>
       <div className="shrink-0 text-center text-sm font-medium text-slate-500">
         Attacking ⮞
       </div>

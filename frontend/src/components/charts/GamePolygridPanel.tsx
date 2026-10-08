@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/select";
 import { getGamePolygrid, type Game, type PolygridCell } from "@/lib/api";
 
+const EMPTY_CELLS: PolygridCell[] = [];
+
 export function GamePolygridPanel({ game }: { game: Game | undefined }) {
   return (
     <PanelCard fill title="Pace spatial polygrid">
       {game ? (
-        <GamePolygridContent key={game.game_id} game={game} />
+        <GamePolygridContent game={game} />
       ) : (
         <p role="status" className="text-sm text-muted-foreground">
           Select a game.
@@ -30,19 +32,32 @@ export function GamePolygridPanel({ game }: { game: Game | undefined }) {
 function GamePolygridContent({ game }: { game: Game }) {
   const [teamId, setTeamId] = useState(game.away_team_id);
   const [paceType, setPaceType] = useState<PaceType>("speed_total_ft_s");
-  const [result, setResult] = useState<{
+  const [selectorGameId, setSelectorGameId] = useState(game.game_id);
+  if (selectorGameId !== game.game_id) {
+    setSelectorGameId(game.game_id);
+    setPaceType("speed_total_ft_s");
+    setTeamId(game.away_team_id);
+  }
+  const [loadedResult, setResult] = useState<{
+    gameId: number;
     data: PolygridCell[];
     error: string | null;
   } | null>(null);
+  const result = loadedResult?.gameId === game.game_id ? loadedResult : null;
   useEffect(() => {
     const controller = new AbortController();
     getGamePolygrid(String(game.game_id), controller.signal)
       .then((data) => {
-        if (!controller.signal.aborted) setResult({ data, error: null });
+        if (!controller.signal.aborted)
+          setResult({ gameId: game.game_id, data, error: null });
       })
       .catch(() => {
         if (!controller.signal.aborted)
-          setResult({ data: [], error: "Unable to load spatial pace." });
+          setResult({
+            gameId: game.game_id,
+            data: [],
+            error: "Unable to load spatial pace.",
+          });
       });
     return () => controller.abort();
   }, [game.game_id]);
@@ -90,23 +105,28 @@ function GamePolygridContent({ game }: { game: Game }) {
           </Select>
         </div>
       </div>
-      {!result || result.error || !result.data.length ? (
-        <p
-          role={result?.error ? "alert" : "status"}
-          className="text-sm text-muted-foreground"
-        >
-          {!result
-            ? "Loading spatial pace..."
-            : (result.error ?? "No spatial pace for this game.")}
-        </p>
-      ) : (
+      <div className="relative min-h-0 flex-1">
         <SpatialPolygrid
-          cells={result.data}
+          cells={result?.data ?? EMPTY_CELLS}
           teamId={teamId}
           paceType={paceType}
-          className="flex-1"
+          className={
+            !result || result.error || !result.data.length
+              ? "invisible"
+              : undefined
+          }
         />
-      )}
+        {(!result || result.error || !result.data.length) && (
+          <p
+            role={result?.error ? "alert" : "status"}
+            className="absolute inset-x-0 top-0 text-sm text-muted-foreground"
+          >
+            {!result
+              ? "Loading spatial pace..."
+              : (result.error ?? "No spatial pace for this game.")}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
