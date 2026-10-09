@@ -212,9 +212,10 @@ export function GameReviewPage() {
     getGames("Olympics 2022", controller.signal)
       .then((data) => {
         if (controller.signal.aborted) return;
+        const initialGame = data[1];
         setGames(data);
-        setSelectedGameId(data.length ? String(data[1].game_id) : "");
-        setPeriod(String(data[0]?.periods[0] ?? 1));
+        setSelectedGameId(String(initialGame.game_id));
+        setPeriod(String(initialGame.periods[0] ?? 1));
       })
       .catch(() => {
         if (!controller.signal.aborted) setError("Unable to load games.");
