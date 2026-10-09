@@ -51,7 +51,10 @@ export function RinkPlot({
       // The image's alpha channel gives the exact rink outline, including corners.
       // Only mask heatmaps: event markers can still extend beyond the boards.
       definitions.querySelector(`#${heatmapMaskId}`)?.remove();
-      const mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
+      const mask = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "mask",
+      );
       mask.id = heatmapMaskId;
       mask.setAttribute("maskUnits", "userSpaceOnUse");
       mask.style.setProperty("mask-type", "alpha");

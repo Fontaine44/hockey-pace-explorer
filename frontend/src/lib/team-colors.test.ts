@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Game, PossessionEvent, TeamPace } from "./api";
 import { getTeamColor } from "./team-colors";
-import { createRinkEventPlot } from "@/components/charts/rink-events";
-import { createTeamPaceTraces } from "@/components/charts/team-pace";
+import { createRinkEventPlot } from "@/components/charts/game-review/possession/rink-events";
+import { createTeamPaceTraces } from "@/components/charts/game-review/team-pace/team-pace";
 
 const game: Game = {
   game_id: 16,

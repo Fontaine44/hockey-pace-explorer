@@ -1,7 +1,7 @@
 import { getTeamColor } from "@/lib/team-colors";
 import type { Data } from "plotly.js";
 import type { Game, TeamPace } from "@/lib/api";
-import type { PaceType } from "./polygrid";
+import type { PaceType } from "@/components/charts/game-review/shared/pace-types";
 
 export function createTeamPaceTraces(
   data: TeamPace[],

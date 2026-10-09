@@ -1,12 +1,12 @@
 import { PanelCard } from "@/components-custom/PanelCard";
-import { GamePolygridPanel } from "@/components/charts/GamePolygridPanel";
-import { GameTeamPacePanel } from "@/components/charts/GameTeamPacePanel";
-import { RinkPlot } from "@/components/charts/RinkPlot";
+import { GamePolygridPanel } from "@/components/charts/game-review/polygrid/GamePolygridPanel";
+import { GameTeamPacePanel } from "@/components/charts/game-review/team-pace/GameTeamPacePanel";
+import { RinkPlot } from "@/components/charts/shared/RinkPlot";
 import {
   createRinkEventPlot,
   EMPTY_PLOT,
-} from "@/components/charts/rink-events";
-import { RinkLegend } from "@/components/charts/RinkLegend";
+} from "@/components/charts/game-review/possession/rink-events";
+import { RinkLegend } from "@/components/charts/game-review/possession/RinkLegend";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {

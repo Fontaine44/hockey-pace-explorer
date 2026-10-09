@@ -1,6 +1,6 @@
 import type { Data, Layout } from "plotly.js";
 import type { ShotOutcome } from "@/lib/api";
-import { OUTCOME_QUARTILE_COLORS } from "./outcome-style";
+import { OUTCOME_QUARTILE_COLORS } from "../shared/outcome-style";
 
 export function createShotOutcomePlot(rows: ShotOutcome[]) {
   const bars = [1, 2, 3, 4].map((quartile) =>

@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { PanelCard } from "@/components-custom/PanelCard";
 import { TeamPaceChart } from "./TeamPaceChart";
 import { createTeamPaceTraces } from "./team-pace";
-import { PACE_TYPES, type PaceType } from "./polygrid";
+import {
+  PACE_TYPES,
+  type PaceType,
+} from "@/components/charts/game-review/shared/pace-types";
 import {
   Select,
   SelectContent,

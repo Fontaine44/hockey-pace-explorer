@@ -3,44 +3,38 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components-custom/EmptyState";
 import { ErrorState } from "@/components-custom/ErrorState";
 import { LoadingState } from "@/components-custom/LoadingState";
-import { getShotOutcomes, type ShotOutcome } from "@/lib/api";
-import { OutcomePlot } from "./OutcomePlot";
-import { createShotOutcomePlot } from "./shot-outcomes";
+import { getEntryOutcomes, type EntryOutcome } from "@/lib/api";
+import { createEntryOutcomePlot } from "./entry-outcomes";
+import { OutcomePlot } from "../shared/OutcomePlot";
 
-export function ShotOutcomesChart() {
+export function EntryOutcomesChart() {
   const [result, setResult] = useState<{
-    rows: ShotOutcome[];
+    rows: EntryOutcome[];
     error?: string;
   } | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    getShotOutcomes(controller.signal)
+    getEntryOutcomes(controller.signal)
       .then((rows) => {
         if (!controller.signal.aborted) setResult({ rows });
       })
       .catch(() => {
         if (!controller.signal.aborted)
-          setResult({ rows: [], error: "Could not load shot outcomes." });
+          setResult({ rows: [], error: "Could not load zone-entry outcomes." });
       });
     return () => controller.abort();
   }, []);
   const figure = useMemo(
-    () => createShotOutcomePlot(result?.rows ?? []),
+    () => createEntryOutcomePlot(result?.rows ?? []),
     [result],
   );
-  if (!result) return <LoadingState message="Loading shot outcomes…" />;
+  if (!result) return <LoadingState message="Loading zone-entry outcomes…" />;
   if (result.error) return <ErrorState message={result.error} />;
-  if (
-    !result.rows.some(
-      (row) =>
-        (row.attempts > 0 && row.on_net_pct !== null) ||
-        (row.distance_attempts > 0 && row.mean_distance_ft !== null),
-    )
-  )
+  if (!result.rows.some((row) => row.entries > 0 && row.shot_pct !== null))
     return (
       <EmptyState
-        title="No shot outcomes"
-        description="No measurable shot attempts are available."
+        title="No zone-entry outcomes"
+        description="No measurable entries are available."
       />
     );
   const bands = new Set(result.rows.map((row) => row.quartile)).size;
@@ -49,7 +43,7 @@ export function ShotOutcomesChart() {
       <div className="min-h-0 flex-1">
         <OutcomePlot
           figure={figure}
-          label="Mean shot distance and on-net percentage by total pace quartile"
+          label="Shot-producing carried and played entries by forward pace quartile"
         />
       </div>
       {bands < 4 && (

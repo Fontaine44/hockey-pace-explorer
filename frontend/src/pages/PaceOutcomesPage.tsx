@@ -4,14 +4,12 @@ import { OutcomeCard } from "@/components-custom/OutcomeCard";
 import { PageHeader } from "@/components-custom/PageHeader";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { EntryOutcomesChart } from "@/components/charts/EntryOutcomesChart";
-import { PassOutcomesChart } from "@/components/charts/PassOutcomesChart";
-import { ShotOutcomesChart } from "@/components/charts/ShotOutcomesChart";
-import {
-  DumpInOutcomesChart,
-  EntryTypeOutcomesChart,
-  OzRecoveryOutcomesChart,
-} from "@/components/charts/RemainingOutcomeCharts";
+import { EntryOutcomesChart } from "@/components/charts/outcomes/entries/EntryOutcomesChart";
+import { PassOutcomesChart } from "@/components/charts/outcomes/passes/PassOutcomesChart";
+import { ShotOutcomesChart } from "@/components/charts/outcomes/shots/ShotOutcomesChart";
+import { DumpInOutcomesChart } from "@/components/charts/outcomes/dump-in-recovery/DumpInOutcomesChart";
+import { EntryTypeOutcomesChart } from "@/components/charts/outcomes/entry-type/EntryTypeOutcomesChart";
+import { OzRecoveryOutcomesChart } from "@/components/charts/outcomes/oz-recovery/OzRecoveryOutcomesChart";
 
 const outcomeCharts = [
   EntryOutcomesChart,

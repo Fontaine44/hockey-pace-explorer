@@ -1,5 +1,5 @@
 import type { EntryOutcome } from "@/lib/api";
-import { createQuartileOutcomePlot } from "./quartile-outcomes";
+import { createQuartileOutcomePlot } from "../shared/quartile-outcomes";
 
 export function createEntryOutcomePlot(rows: EntryOutcome[]) {
   return createQuartileOutcomePlot(

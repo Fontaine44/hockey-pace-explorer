@@ -14,8 +14,8 @@ export function RinkLegend() {
     <div
       aria-label="Rink event legend"
       className="mx-auto flex w-fit max-w-full shrink-0 items-center gap-4 overflow-x-auto pb-2 text-xs text-muted-foreground"
-    > 
-      Legend: 
+    >
+      Legend:
       {MARKER_LEGEND.map(({ label, symbol }) => {
         const shape = symbol;
         return (

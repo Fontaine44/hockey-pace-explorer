@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { PanelCard } from "@/components-custom/PanelCard";
-import { SpatialPolygrid } from "@/components/charts/SpatialPolygrid";
-import { PACE_TYPES, type PaceType } from "@/components/charts/polygrid";
+import { SpatialPolygrid } from "@/components/charts/game-review/polygrid/SpatialPolygrid";
+import {
+  PACE_TYPES,
+  type PaceType,
+} from "@/components/charts/game-review/shared/pace-types";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {

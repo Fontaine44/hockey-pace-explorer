@@ -4,7 +4,7 @@ import { EmptyState } from "@/components-custom/EmptyState";
 import { ErrorState } from "@/components-custom/ErrorState";
 import { LoadingState } from "@/components-custom/LoadingState";
 import { getPassOutcomes, type PassOutcome } from "@/lib/api";
-import { OutcomePlot } from "./OutcomePlot";
+import { OutcomePlot } from "../shared/OutcomePlot";
 import { createPassOutcomePlot } from "./pass-outcomes";
 
 export function PassOutcomesChart() {

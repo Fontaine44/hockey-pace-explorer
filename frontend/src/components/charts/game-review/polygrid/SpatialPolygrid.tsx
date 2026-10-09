@@ -1,9 +1,7 @@
+import type { PaceType } from "@/components/charts/game-review/shared/pace-types";
 import { useMemo } from "react";
-import { RinkPlot } from "@/components/charts/RinkPlot";
-import {
-  createPolygridTrace,
-  type PaceType,
-} from "@/components/charts/polygrid";
+import { RinkPlot } from "@/components/charts/shared/RinkPlot";
+import { createPolygridTrace } from "@/components/charts/game-review/polygrid/polygrid";
 import type { PolygridCell } from "@/lib/api";
 import { cn } from "@/lib/utils";
 

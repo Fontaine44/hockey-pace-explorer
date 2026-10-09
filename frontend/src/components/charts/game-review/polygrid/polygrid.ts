@@ -1,13 +1,7 @@
 import type { Data } from "plotly.js";
 import type { PolygridCell } from "@/lib/api";
 
-export const PACE_TYPES = [
-  { value: "speed_total_ft_s", label: "Total" },
-  { value: "speed_ew_ft_s", label: "East-west" },
-  { value: "speed_ns_ft_s", label: "North-south" },
-  { value: "speed_n_ft_s", label: "North-only" },
-] as const;
-export type PaceType = (typeof PACE_TYPES)[number]["value"];
+import type { PaceType } from "@/components/charts/game-review/shared/pace-types";
 
 export function createPolygridTrace(
   cells: PolygridCell[],
@@ -63,8 +57,7 @@ export function createPolygridTrace(
       showscale: false,
       zsmooth: false,
       hoverongaps: false,
-      hovertemplate:
-        "Pace: %{z:.2f} ft/s<extra></extra>",
+      hovertemplate: "Pace: %{z:.2f} ft/s<extra></extra>",
     },
   };
 }
