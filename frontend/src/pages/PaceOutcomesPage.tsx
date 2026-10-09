@@ -26,7 +26,7 @@ const outcomes = [
   {
     title: "Shot generation after controlled entries",
     question:
-      "Does faster forward pace before entry coincide with more shot generation?",
+      "Does faster forward pace before zone entry coincide with more shot generation?",
     explanation:
       "Forward-only pace before controlled entries (carried or played).\n\nSuccess is a subsequent shot attempt within 5 seconds of zone entry.",
   },
