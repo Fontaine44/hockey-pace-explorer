@@ -25,42 +25,26 @@ The project uses Stathletes event data published in the [Big Data Cup repository
 
 ### What is pace?
 
-<table>
-<tr>
-<td width="55%" valign="top">
-<p>Pace measures how quickly a team moves the puck during possession, through both carries and passes. It is calculated from the distance and elapsed time between successive puck events.</p>
-<p><strong>Pace = reconstructed puck movement distance ÷ elapsed time</strong>
-, expressed in feet per second (ft/s).</p>
-<table><thead><tr><th>Component</th>
-<th>What it measures</th>
-</tr>
-</thead>
-<tbody><tr><td>Total</td>
-<td>Movement in any direction.</td>
-</tr>
-<tr><td>Forward (North-only)</td>
-<td>Movement toward the opponent's goal; backward movement contributes zero.</td>
-</tr>
-<tr><td>Lateral (East-west)</td>
-<td>Movement across the width of the rink.</td>
-</tr>
-<tr><td>Longitudinal (North-south)</td>
-<td>Movement along the length of the rink, forward or backward.</td>
-</tr>
-</tbody>
-</table>
-<p>Event locations and timing describe the puck's progression through a possession. The resulting pace combines movement across events, rather than measuring a player's skating speed or the flight speed of a single pass.</p>
-<p>The figure on the right follows a puck recovery through carries and passes to a shot; the backward pass to P3 contributes to total pace but not forward pace.</p>
-</td>
-<td width="45%" valign="middle">
-<figure><img src="media/pace.png" alt="Rink diagram showing the direction of attack, total puck movement, east–west movement across the rink, north–south movement along the rink, and north-only movement toward the attacking goal." width="420">
-<p>Image: Figure 1 from <a href="https://arxiv.org/abs/1902.02020" target="_blank" rel="noopener noreferrer"><em>Playing Fast, Not Loose</em>
-</a>
- by David Yu, Christopher Boucher, Luke Bornn, and Mehrsan Javan (2019).</p>
-</figure>
-</td>
-</tr>
-</table>
+Pace measures how quickly a team moves the puck during possession, through both carries and passes. It is calculated from the distance and elapsed time between successive puck events.
+
+**Pace = reconstructed puck movement distance ÷ elapsed time**, expressed in feet per second (ft/s).
+
+| Component | What it measures |
+| --- | --- |
+| Total | Movement in any direction. |
+| Forward (North-only) | Movement toward the opponent's goal; backward movement contributes zero. |
+| Lateral (East-west) | Movement across the width of the rink. |
+| Longitudinal (North-south) | Movement along the length of the rink, forward or backward. |
+
+Event locations and timing describe the puck's progression through a possession. The resulting pace combines movement across events, rather than measuring a player's skating speed or the flight speed of a single pass.
+
+The figure below follows a puck recovery through carries and passes to a shot; the backward pass to P3 contributes to total pace but not forward pace.
+
+<p align="center">
+  <img src="media/pace.png" width="600" alt="Rink diagram showing the direction of attack, total puck movement, east–west movement across the rink, north–south movement along the rink, and north-only movement toward the attacking goal.">
+</p>
+
+Image: Figure 1 from [*Playing Fast, Not Loose*](https://arxiv.org/abs/1902.02020) by David Yu, Christopher Boucher, Luke Bornn, and Mehrsan Javan (2019).
 
 ### Analytical approach
 
