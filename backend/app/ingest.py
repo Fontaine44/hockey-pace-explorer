@@ -112,7 +112,7 @@ def check_relationships(connection: sqlite3.Connection) -> None:
 
 
 def main() -> None:
-    """Import eight final exports, then replace the database after success."""
+    """Import final exports, then replace the database after success."""
     processed = PROJECT_ROOT / "data" / "processed"
     teams = pd.read_parquet(processed / "teams_augmented.parquet")
     players = pd.read_parquet(processed / "players.parquet")
@@ -122,6 +122,12 @@ def main() -> None:
     cells = pd.read_parquet(processed / "polygrid_cells.parquet")
     game_team_pace = pd.read_parquet(processed / "game_team_pace.parquet")
     game_polygrid = pd.read_parquet(processed / "game_polygrid.parquet")
+    entry_outcomes = pd.read_parquet(processed / "entry_outcomes.parquet")
+    pass_outcomes = pd.read_parquet(processed / "pass_outcomes.parquet")
+    shot_outcomes = pd.read_parquet(processed / "shot_outcomes.parquet")
+    oz_recovery_outcomes = pd.read_parquet(processed / "oz_recovery_outcomes.parquet")
+    entry_type_outcomes = pd.read_parquet(processed / "entry_type_outcomes.parquet")
+    dump_in_outcomes = pd.read_parquet(processed / "dump_in_outcomes.parquet")
 
     url = make_url(get_settings().database_url)
     if (
@@ -266,6 +272,94 @@ def main() -> None:
                     speed_n_ft_s REAL CHECK (speed_n_ft_s >= 0),
                     PRIMARY KEY (game_id, team_id, cell_id)
                 );
+                CREATE TABLE entry_outcomes (
+                    entry_type TEXT NOT NULL
+                        CHECK (entry_type IN ('Carried', 'Played')),
+                    quartile INTEGER NOT NULL CHECK (quartile BETWEEN 1 AND 4),
+                    entries INTEGER NOT NULL CHECK (entries >= 0),
+                    successes INTEGER NOT NULL CHECK (successes BETWEEN 0 AND entries),
+                    games INTEGER NOT NULL CHECK (games >= 0),
+                    median_pace_ft_s REAL CHECK (median_pace_ft_s >= 0),
+                    shot_pct REAL CHECK (shot_pct BETWEEN 0 AND 100),
+                    lower_pace_ft_s REAL NOT NULL CHECK (lower_pace_ft_s >= 0),
+                    upper_pace_ft_s REAL NOT NULL
+                        CHECK (upper_pace_ft_s >= lower_pace_ft_s),
+                    PRIMARY KEY (entry_type, quartile)
+                );
+                CREATE TABLE pass_outcomes (
+                    pass_type TEXT NOT NULL CHECK (pass_type IN ('Direct', 'Indirect')),
+                    quartile INTEGER NOT NULL CHECK (quartile BETWEEN 1 AND 4),
+                    attempts INTEGER NOT NULL CHECK (attempts >= 0),
+                    completed INTEGER NOT NULL CHECK (completed BETWEEN 0 AND attempts),
+                    games INTEGER NOT NULL CHECK (games >= 0),
+                    median_pace_ft_s REAL CHECK (median_pace_ft_s >= 0),
+                    completion_pct REAL CHECK (completion_pct BETWEEN 0 AND 100),
+                    lower_pace_ft_s REAL NOT NULL CHECK (lower_pace_ft_s >= 0),
+                    upper_pace_ft_s REAL NOT NULL
+                        CHECK (upper_pace_ft_s >= lower_pace_ft_s),
+                    PRIMARY KEY (pass_type, quartile)
+                );
+                CREATE TABLE shot_outcomes (
+                    quartile INTEGER PRIMARY KEY CHECK (quartile BETWEEN 1 AND 4),
+                    attempts INTEGER NOT NULL CHECK (attempts >= 0),
+                    on_net_attempts INTEGER NOT NULL
+                        CHECK (on_net_attempts BETWEEN 0 AND attempts),
+                    games INTEGER NOT NULL CHECK (games >= 0),
+                    median_pace_ft_s REAL CHECK (median_pace_ft_s >= 0),
+                    mean_distance_ft REAL CHECK (mean_distance_ft >= 0),
+                    distance_attempts INTEGER NOT NULL
+                        CHECK (distance_attempts BETWEEN 0 AND attempts),
+                    on_net_pct REAL CHECK (on_net_pct BETWEEN 0 AND 100),
+                    lower_pace_ft_s REAL NOT NULL CHECK (lower_pace_ft_s >= 0),
+                    upper_pace_ft_s REAL NOT NULL
+                        CHECK (upper_pace_ft_s >= lower_pace_ft_s)
+                );
+                CREATE TABLE oz_recovery_outcomes (
+                    quartile INTEGER PRIMARY KEY CHECK (quartile BETWEEN 1 AND 4),
+                    possessions INTEGER NOT NULL CHECK (possessions >= 0),
+                    shot_possessions INTEGER NOT NULL
+                        CHECK (shot_possessions BETWEEN 0 AND possessions),
+                    games INTEGER NOT NULL CHECK (games >= 0),
+                    median_pace_ft_s REAL CHECK (median_pace_ft_s >= 0),
+                    median_time_to_shot_seconds REAL
+                        CHECK (median_time_to_shot_seconds >= 0),
+                    shot_pct REAL CHECK (shot_pct BETWEEN 0 AND 100),
+                    lower_pace_ft_s REAL NOT NULL CHECK (lower_pace_ft_s >= 0),
+                    upper_pace_ft_s REAL NOT NULL
+                        CHECK (upper_pace_ft_s >= lower_pace_ft_s)
+                );
+                CREATE TABLE entry_type_outcomes (
+                    quartile INTEGER PRIMARY KEY CHECK (quartile BETWEEN 1 AND 4),
+                    entries INTEGER NOT NULL CHECK (entries >= 0),
+                    controlled_entries INTEGER NOT NULL CHECK (controlled_entries >= 0),
+                    dumped_entries INTEGER NOT NULL CHECK (dumped_entries >= 0),
+                    games INTEGER NOT NULL CHECK (games >= 0),
+                    median_pace_ft_s REAL CHECK (median_pace_ft_s >= 0),
+                    controlled_entry_pct REAL
+                        CHECK (controlled_entry_pct BETWEEN 0 AND 100),
+                    dumped_entry_pct REAL CHECK (dumped_entry_pct BETWEEN 0 AND 100),
+                    lower_pace_ft_s REAL NOT NULL CHECK (lower_pace_ft_s >= 0),
+                    upper_pace_ft_s REAL NOT NULL
+                        CHECK (upper_pace_ft_s >= lower_pace_ft_s),
+                    CHECK (controlled_entries + dumped_entries = entries)
+                );
+                CREATE TABLE dump_in_outcomes (
+                    quartile INTEGER PRIMARY KEY CHECK (quartile BETWEEN 1 AND 4),
+                    dump_ins INTEGER NOT NULL CHECK (dump_ins >= 0),
+                    team_recoveries INTEGER NOT NULL CHECK (team_recoveries >= 0),
+                    no_team_recovery INTEGER NOT NULL CHECK (no_team_recovery >= 0),
+                    unresolved INTEGER NOT NULL CHECK (unresolved >= 0),
+                    games INTEGER NOT NULL CHECK (games >= 0),
+                    median_pace_ft_s REAL CHECK (median_pace_ft_s >= 0),
+                    team_recovery_pct REAL CHECK (team_recovery_pct BETWEEN 0 AND 100),
+                    no_team_recovery_pct REAL
+                        CHECK (no_team_recovery_pct BETWEEN 0 AND 100),
+                    unresolved_pct REAL CHECK (unresolved_pct BETWEEN 0 AND 100),
+                    lower_pace_ft_s REAL NOT NULL CHECK (lower_pace_ft_s >= 0),
+                    upper_pace_ft_s REAL NOT NULL
+                        CHECK (upper_pace_ft_s >= lower_pace_ft_s),
+                    CHECK (team_recoveries + no_team_recovery + unresolved = dump_ins)
+                );
             """)
             with connection:
                 for name, frame in [
@@ -277,6 +371,12 @@ def main() -> None:
                     ("polygrid_cells", cells),
                     ("game_team_pace", game_team_pace),
                     ("game_polygrid", game_polygrid),
+                    ("entry_outcomes", entry_outcomes),
+                    ("pass_outcomes", pass_outcomes),
+                    ("shot_outcomes", shot_outcomes),
+                    ("oz_recovery_outcomes", oz_recovery_outcomes),
+                    ("entry_type_outcomes", entry_type_outcomes),
+                    ("dump_in_outcomes", dump_in_outcomes),
                 ]:
                     counts.append((name, insert_table(connection, name, frame)))
                 check_relationships(connection)

@@ -41,6 +41,12 @@ def test_final_exports_repeat_import_and_endpoints(database, monkeypatch):
         "polygrid_cells": ("polygrid_cells", 668),
         "game_team_pace": ("game_team_pace", 282),
         "game_polygrid": ("game_polygrid", 45424),
+        "entry_outcomes": ("entry_outcomes", 8),
+        "pass_outcomes": ("pass_outcomes", 8),
+        "shot_outcomes": ("shot_outcomes", 4),
+        "oz_recovery_outcomes": ("oz_recovery_outcomes", 4),
+        "entry_type_outcomes": ("entry_type_outcomes", 4),
+        "dump_in_outcomes": ("dump_in_outcomes", 4),
     }
     read_parquet = pd.read_parquet
     reads = []
@@ -52,7 +58,7 @@ def test_final_exports_repeat_import_and_endpoints(database, monkeypatch):
 
     monkeypatch.setattr(pd, "read_parquet", final_only)
     ingest.main()
-    assert len(reads) == 8
+    assert len(reads) == len(exports)
     with closing(sqlite3.connect(database)) as connection:
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         for table, (file, count) in exports.items():
