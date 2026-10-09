@@ -1,5 +1,8 @@
+import { useState } from "react";
+
 import { OutcomeCard } from "@/components-custom/OutcomeCard";
 import { PageHeader } from "@/components-custom/PageHeader";
+import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EntryOutcomesChart } from "@/components/charts/EntryOutcomesChart";
 import { PassOutcomesChart } from "@/components/charts/PassOutcomesChart";
@@ -63,28 +66,51 @@ const outcomes = [
 ];
 
 export function PaceOutcomesPage() {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const outcome = outcomes[selectedIndex];
+  const Chart = outcomeCharts[selectedIndex];
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-8">
       <div className="shrink-0">
         <PageHeader
           title="Pace & outcomes"
-          descriptionClassName="max-w-none"
+          descriptionClassName="mt-3 max-w-none"
           description="Compare outcomes across four pace groups (quartiles), each containing roughly 25% of observations, from lowest to highest pace. Only 5v5 game situations."
         />
       </div>
       <TooltipProvider delayDuration={0}>
         <section
-          aria-label="Pace and outcomes panels"
-          className="grid min-h-[1128px] flex-1 grid-cols-2 grid-rows-[repeat(3,minmax(360px,1fr))] gap-4 pb-4"
+          aria-label="Pace and outcomes analysis"
+          className="grid min-h-[400px] flex-1 grid-cols-[300px_minmax(0,1fr)] gap-4 pb-4"
         >
-          {outcomes.map((outcome, index) => {
-            const Chart = outcomeCharts[index];
-            return (
-              <OutcomeCard key={outcome.title} {...outcome}>
-                <Chart />
-              </OutcomeCard>
-            );
-          })}
+          <nav
+            aria-label="Analysis navigation"
+            className="flex flex-col items-start gap-1"
+          >
+            {outcomes.map((item, index) => (
+              <Button
+                key={item.title}
+                type="button"
+                variant="ghost"
+                aria-pressed={selectedIndex === index}
+                aria-controls="selected-outcome"
+                onClick={() => setSelectedIndex(index)}
+                className={`h-auto w-full cursor-pointer justify-start whitespace-normal px-3 py-3 text-left ${
+                  selectedIndex === index
+                    ? "bg-zinc-800 text-white hover:bg-zinc-700 hover:text-white"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {item.title}
+              </Button>
+            ))}
+          </nav>
+          <div id="selected-outcome" className="min-h-0 min-w-0">
+            <OutcomeCard key={outcome.title} {...outcome}>
+              <Chart />
+            </OutcomeCard>
+          </div>
         </section>
       </TooltipProvider>
     </div>

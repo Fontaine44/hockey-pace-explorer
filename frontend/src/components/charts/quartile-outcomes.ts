@@ -27,7 +27,9 @@ export function createQuartileOutcomePlot(
     annotations.push({
       text: type,
       x: index === 0 ? 0.22 : 0.78,
-      y: 1.12,
+      y: 1,
+      yanchor: "bottom",
+      yshift: 8,
       xref: "paper",
       yref: "paper",
       showarrow: false,
@@ -86,7 +88,7 @@ export function createQuartileOutcomePlot(
     fixedrange: true,
     categoryorder: "array" as const,
     categoryarray: ["Q1", "Q2", "Q3", "Q4"],
-    title: { text: xTitle, font: { size: 11 } },
+    title: { text: xTitle, font: { size: 14 } },
   };
   const yaxis = {
     range: [0, 100],
@@ -108,7 +110,7 @@ export function createQuartileOutcomePlot(
     yaxis: {
       ...yaxis,
       anchor: "x",
-      title: { text: yTitle, font: { size: 11 } },
+      title: { text: yTitle, font: { size: 14 } },
     },
     yaxis2: { ...yaxis, anchor: "x2", matches: "y", showticklabels: false },
   };

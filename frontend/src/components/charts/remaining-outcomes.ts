@@ -19,7 +19,7 @@ function percentageLayout(yTitle: string, stacked = false): Partial<Layout> {
       orientation: "h",
       x: 0.5,
       xanchor: "center",
-      y: 1.12,
+      y: 1,
       yanchor: "bottom",
       font: { size: 10 },
     },
@@ -27,7 +27,7 @@ function percentageLayout(yTitle: string, stacked = false): Partial<Layout> {
       fixedrange: true,
       categoryorder: "array",
       categoryarray: ["Q1", "Q2", "Q3", "Q4"],
-      title: { text: "Total pace quartile", font: { size: 11 } },
+      title: { text: "Total pace quartile", font: { size: 14 } },
     },
     yaxis: {
       fixedrange: true,
@@ -35,7 +35,7 @@ function percentageLayout(yTitle: string, stacked = false): Partial<Layout> {
       dtick: 25,
       ticksuffix: "%",
       gridcolor: "#e2e8f0",
-      title: { text: yTitle, font: { size: 11 } },
+      title: { text: yTitle, font: { size: 14 } },
     },
   };
 }

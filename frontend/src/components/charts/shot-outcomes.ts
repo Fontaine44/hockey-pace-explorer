@@ -29,7 +29,9 @@ export function createShotOutcomePlot(rows: ShotOutcome[]) {
     annotations.push({
       text: panel.name,
       x: center,
-      y: 1.12,
+      y: 1,
+      yanchor: "bottom",
+      yshift: 8,
       xref: "paper",
       yref: "paper",
       showarrow: false,
@@ -68,7 +70,7 @@ export function createShotOutcomePlot(rows: ShotOutcome[]) {
     fixedrange: true,
     categoryorder: "array" as const,
     categoryarray: ["Q1", "Q2", "Q3", "Q4"],
-    title: { text: "Total pace quartile", font: { size: 11 } },
+    title: { text: "Total pace quartile", font: { size: 14 } },
   };
   const yaxis = { fixedrange: true, gridcolor: "#e2e8f0" };
   const layout: Partial<Layout> = {
@@ -85,7 +87,7 @@ export function createShotOutcomePlot(rows: ShotOutcome[]) {
       ...yaxis,
       anchor: "x",
       rangemode: "tozero",
-      title: { text: "Distance (ft)", font: { size: 11 } },
+      title: { text: "Distance (ft)", font: { size: 14 } },
     },
     yaxis2: {
       ...yaxis,
@@ -93,7 +95,7 @@ export function createShotOutcomePlot(rows: ShotOutcome[]) {
       range: [0, 100],
       dtick: 25,
       ticksuffix: "%",
-      title: { text: "On-net attempts (%)", font: { size: 11 } },
+      title: { text: "On-net attempts (%)", font: { size: 14 } },
     },
   };
   return { traces, layout };
