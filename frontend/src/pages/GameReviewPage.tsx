@@ -213,7 +213,7 @@ export function GameReviewPage() {
       .then((data) => {
         if (controller.signal.aborted) return;
         setGames(data);
-        setSelectedGameId(data.length ? String(data[0].game_id) : "");
+        setSelectedGameId(data.length ? String(data[1].game_id) : "");
         setPeriod(String(data[0]?.periods[0] ?? 1));
       })
       .catch(() => {

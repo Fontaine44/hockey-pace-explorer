@@ -24,6 +24,7 @@ interface PanelCardProps {
   children?: ReactNode;
   fill?: boolean;
   className?: string;
+  headerClassName?: string;
 }
 
 export function PanelCard({
@@ -38,6 +39,7 @@ export function PanelCard({
   children,
   fill = false,
   className,
+  headerClassName,
 }: PanelCardProps) {
   let content = children;
   if (loading)
@@ -49,7 +51,12 @@ export function PanelCard({
   return (
     <Card className={cn(fill && "flex h-full min-h-0 flex-col", className)}>
       {(title || description || actions) && (
-        <CardHeader className="flex-row items-start justify-between gap-4">
+        <CardHeader
+          className={cn(
+            "flex-row items-start justify-between gap-4",
+            headerClassName,
+          )}
+        >
           <div>
             <CardTitle>{title}</CardTitle>
             {description ? (
