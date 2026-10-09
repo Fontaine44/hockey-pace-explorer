@@ -3,7 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { label: "What is pace?", href: "/" },
+  { label: "Research overview", href: "/" },
   { label: "Pace & outcomes", href: "/pace-outcomes" },
   { label: "Game review", href: "/game-review" },
 ];
