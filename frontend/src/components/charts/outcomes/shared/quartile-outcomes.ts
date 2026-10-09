@@ -18,6 +18,7 @@ export function createQuartileOutcomePlot(
   groups: [string, string],
   xTitle: string,
   yTitle: string,
+  groupTitles: [string, string] = groups,
 ) {
   const annotations: Partial<Layout>["annotations"] = [];
   const traces: Data[] = groups.map((type, index) => {
@@ -25,7 +26,7 @@ export function createQuartileOutcomePlot(
       rows.find((row) => row.group === type && row.quartile === quartile),
     );
     annotations.push({
-      text: type,
+      text: groupTitles[index],
       x: index === 0 ? 0.22 : 0.78,
       y: 1,
       yanchor: "bottom",

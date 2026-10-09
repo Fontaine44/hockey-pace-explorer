@@ -12,5 +12,6 @@ export function createEntryOutcomePlot(rows: EntryOutcome[]) {
     ["Carried", "Played"],
     "Forward pace quartile",
     "Shot-producing entries (%)",
+    ["Carried", "Played (Pass)"],
   );
 }
