@@ -351,12 +351,16 @@ export function GameReviewPage() {
                     </div>
                     <div className="flex h-6 items-center">
                       <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
-                        {selectedPossession && selectedGame
-                          ? selectedPossession.possession_team_id ===
-                            selectedGame.away_team_id
-                            ? "Attacking ⮞"
-                            : "Defending"
-                          : "\u00a0"}
+                        {selectedPossession && selectedGame ? (
+                          selectedPossession.possession_team_id ===
+                          selectedGame.away_team_id ? (
+                            <strong className="font-bold">Attacking ⮞</strong>
+                          ) : (
+                            "Defending"
+                          )
+                        ) : (
+                          "\u00a0"
+                        )}
                       </span>
                       <div className="flex w-62 shrink-0 justify-center">
                         <span className="flex h-6 min-w-12 items-center justify-center text-sm font-normal">
@@ -366,12 +370,16 @@ export function GameReviewPage() {
                         </span>
                       </div>
                       <span className="min-w-0 flex-1 text-center text-s font-medium text-slate-500">
-                        {selectedPossession && selectedGame
-                          ? selectedPossession.possession_team_id ===
-                            selectedGame.home_team_id
-                            ? "⮜ Attacking"
-                            : "Defending"
-                          : "\u00a0"}
+                        {selectedPossession && selectedGame ? (
+                          selectedPossession.possession_team_id ===
+                          selectedGame.home_team_id ? (
+                            <strong className="font-bold">⮜ Attacking</strong>
+                          ) : (
+                            "Defending"
+                          )
+                        ) : (
+                          "\u00a0"
+                        )}
                       </span>
                     </div>
                   </div>

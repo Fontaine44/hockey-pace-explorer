@@ -42,6 +42,9 @@ export function AppShell() {
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <Navigation />
         </div>
+        <span className="absolute right-5 top-1/2 -translate-y-1/2 whitespace-nowrap text-sm text-gray-400">
+          Presented by Raphael Fontaine
+        </span>
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex h-full min-h-0 w-full flex-col p-4">

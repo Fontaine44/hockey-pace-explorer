@@ -45,9 +45,10 @@ export function WhatIsPacePage() {
       : Activity;
 
   return (
-    <>
+    <div className="flex flex-col gap-8">
       <PageHeader
         title="What is pace?"
+        descriptionClassName="mt-3"
         description="Understand the measures used to describe puck movement."
       />
       <section aria-label="Backend API status" className="max-w-sm">
@@ -90,6 +91,6 @@ export function WhatIsPacePage() {
           </p>
         </div>
       </PanelCard>
-    </>
+    </div>
   );
 }

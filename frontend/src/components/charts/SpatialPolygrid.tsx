@@ -41,7 +41,7 @@ export function SpatialPolygrid({
           </div>
         )}
       </div>
-      <div className="shrink-0 text-center text-sm font-medium text-slate-500">
+      <div className="shrink-0 text-center text-sm font-bold text-slate-500">
         Attacking ⮞
       </div>
       <div
