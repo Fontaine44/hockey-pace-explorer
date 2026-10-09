@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
@@ -48,7 +49,15 @@ export function AppShell() {
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex h-full min-h-0 w-full flex-col p-4">
-          <Outlet />
+          <Suspense
+            fallback={
+              <p role="status" className="text-sm text-muted-foreground">
+                Loading page…
+              </p>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

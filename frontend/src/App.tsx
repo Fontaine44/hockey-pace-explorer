@@ -1,10 +1,21 @@
+import { lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { GameReviewPage } from "@/pages/GameReviewPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import { PaceOutcomesPage } from "@/pages/PaceOutcomesPage";
 import { ResearchOverviewPage } from "@/pages/ResearchOverviewPage";
+
+const GameReviewPage = lazy(() =>
+  import("@/pages/GameReviewPage").then((module) => ({
+    default: module.GameReviewPage,
+  })),
+);
+
+const PaceOutcomesPage = lazy(() =>
+  import("@/pages/PaceOutcomesPage").then((module) => ({
+    default: module.PaceOutcomesPage,
+  })),
+);
 
 export default function App() {
   return (
