@@ -54,7 +54,6 @@ export function DumpInOutcomesChart() {
       hasData={hasDumpInData}
       name="dump-in outcomes"
       label="Team recovery within five seconds after dump-ins by total pace quartile"
-      note="Unresolved attempts remain in the denominator."
     />
   );
 }

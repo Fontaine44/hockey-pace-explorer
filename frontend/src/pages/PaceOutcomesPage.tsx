@@ -15,20 +15,27 @@ import {
 
 const outcomeCharts = [
   EntryOutcomesChart,
+  EntryTypeOutcomesChart,
   PassOutcomesChart,
   ShotOutcomesChart,
-  OzRecoveryOutcomesChart,
-  EntryTypeOutcomesChart,
   DumpInOutcomesChart,
+  OzRecoveryOutcomesChart,
 ];
 
 const outcomes = [
   {
-    title: "Controlled zone entry shot generation",
+    title: "Shot generation after controlled entries",
     question:
       "Does faster forward pace before entry coincide with more shot generation?",
     explanation:
       "Forward-only pace before controlled entries (carried or played).\n\nSuccess is a subsequent shot attempt within 5 seconds of zone entry.",
+  },
+  {
+    title: "Zone entry type by pace",
+    question:
+      "Does faster pace before zone entry coincide with more controlled entries?",
+    explanation:
+      "Total possession pace before the zone entry.\n\nControlled entries (carried or played) are compared with dumped entries.",
   },
   {
     title: "Pass completion by pace",
@@ -43,25 +50,18 @@ const outcomes = [
       "Total pace during the 5 seconds preceding shot attempts.\n\nOutcomes are on-net percentage and average shot distance.",
   },
   {
-    title: "Offensive-zone recoveries pace",
-    question:
-      "Does faster movement after an offensive-zone puck recovery coincide with more shot generation?",
-    explanation:
-      "Total pace after an offensive-zone puck recovery.\n\nThe outcome is whether that possession generates a shot attempt.",
-  },
-  {
-    title: "Entry type by pace",
-    question:
-      "Does faster pace before zone entry coincide with more controlled entries?",
-    explanation:
-      "Total possession pace before the zone entry.\n\nControlled entries (carried or played) are compared with dumped entries.",
-  },
-  {
     title: "Dump-in recovery by pace",
     question:
       "Does faster pace before a dump-in coincide with puck recovery by the dumping team?",
     explanation:
       "Total possession pace through the dump-in.\n\nSuccess means the dumping team establishes control within five seconds, including recovery after initial opponent control.",
+  },
+  {
+    title: "Shot generation after offensive-zone recoveries",
+    question:
+      "Does faster movement after an offensive-zone puck recovery coincide with more shot generation?",
+    explanation:
+      "Total pace after an offensive-zone puck recovery.\n\nThe outcome is whether that possession generates a shot attempt.",
   },
 ];
 
@@ -82,7 +82,7 @@ export function PaceOutcomesPage() {
       <TooltipProvider delayDuration={0}>
         <section
           aria-label="Pace and outcomes analysis"
-          className="grid min-h-[400px] flex-1 grid-cols-[300px_minmax(0,1fr)] gap-4 pb-4"
+          className="grid min-h-[400px] flex-1 grid-cols-[340px_minmax(0,1fr)] gap-4 pb-4"
         >
           <nav
             aria-label="Analysis navigation"

@@ -35,7 +35,7 @@ export function createShotOutcomePlot(rows: ShotOutcome[]) {
       xref: "paper",
       yref: "paper",
       showarrow: false,
-      font: { size: 12 },
+      font: { size: 16 },
     });
     if (values.every((value) => value === null))
       annotations.push({
@@ -74,7 +74,7 @@ export function createShotOutcomePlot(rows: ShotOutcome[]) {
   };
   const yaxis = { fixedrange: true, gridcolor: "#e2e8f0" };
   const layout: Partial<Layout> = {
-    margin: { l: 52, r: 12, t: 30, b: 44 },
+    margin: { l: 52, r: 12, t: 40, b: 44 },
     showlegend: false,
     bargap: 0.25,
     paper_bgcolor: "rgba(0,0,0,0)",

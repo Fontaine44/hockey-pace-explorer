@@ -13,15 +13,13 @@ import {
 import { getGamePace, type Game, type TeamPace } from "@/lib/api";
 
 export function GameTeamPacePanel({ game }: { game: Game | undefined }) {
-  return (
+  return game ? (
+    <GameTeamPaceContent game={game} />
+  ) : (
     <PanelCard fill title="Pace by team and period">
-      {game ? (
-        <GameTeamPaceContent game={game} />
-      ) : (
-        <p role="status" className="text-sm text-muted-foreground">
-          Select a game.
-        </p>
-      )}
+      <p role="status" className="text-sm text-muted-foreground">
+        Select a game.
+      </p>
     </PanelCard>
   );
 }
@@ -61,56 +59,64 @@ function GameTeamPaceContent({ game }: { game: Game }) {
     [result, game, paceType],
   );
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="flex shrink-0 items-center justify-end gap-2">
-        <label htmlFor="team-pace-type" className="text-sm font-medium">
-          Pace:
-        </label>
-        <Select
-          value={paceType}
-          onValueChange={(value) => setPaceType(value as PaceType)}
-        >
-          <SelectTrigger
-            id="team-pace-type"
-            aria-label="Team pace type"
-            className="w-40 bg-white"
+    <PanelCard
+      fill
+      title="Pace by team and period"
+      headerClassName="items-center"
+      actions={
+        <div className="flex shrink-0 items-center justify-end gap-2">
+          <label htmlFor="team-pace-type" className="text-sm font-medium">
+            Pace:
+          </label>
+          <Select
+            value={paceType}
+            onValueChange={(value) => setPaceType(value as PaceType)}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PACE_TYPES.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="relative min-h-0 flex-1">
-        <div
-          className={`h-full min-h-0 ${!result || result.error || !result.data.length ? "invisible" : ""}`}
-        >
-          <TeamPaceChart traces={chart.traces} />
+            <SelectTrigger
+              id="team-pace-type"
+              aria-label="Team pace type"
+              className="w-40 bg-white"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PACE_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        {(!result || result.error || !result.data.length) && (
-          <p
-            role={result?.error ? "alert" : "status"}
-            className="absolute inset-x-0 top-0 text-sm text-muted-foreground"
+      }
+    >
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="relative min-h-0 flex-1">
+          <div
+            className={`h-full min-h-0 ${!result || result.error || !result.data.length ? "invisible" : ""}`}
           >
-            {!result
-              ? "Loading team pace..."
-              : (result.error ?? "No team pace for this game.")}
-          </p>
-        )}
+            <TeamPaceChart traces={chart.traces} />
+          </div>
+          {(!result || result.error || !result.data.length) && (
+            <p
+              role={result?.error ? "alert" : "status"}
+              className="absolute inset-x-0 top-0 text-sm text-muted-foreground"
+            >
+              {!result
+                ? "Loading team pace..."
+                : (result.error ?? "No team pace for this game.")}
+            </p>
+          )}
+        </div>
+        {result &&
+          !result.error &&
+          result.data.length > 0 &&
+          chart.missing.length > 0 && (
+            <p role="status" className="shrink-0 text-xs text-muted-foreground">
+              No modeled exposure: {chart.missing.join("; ")}.
+            </p>
+          )}
       </div>
-      {result &&
-        !result.error &&
-        result.data.length > 0 &&
-        chart.missing.length > 0 && (
-          <p role="status" className="shrink-0 text-xs text-muted-foreground">
-            No modeled exposure: {chart.missing.join("; ")}.
-          </p>
-        )}
-    </div>
+    </PanelCard>
   );
 }

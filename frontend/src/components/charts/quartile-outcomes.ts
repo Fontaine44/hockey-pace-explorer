@@ -33,7 +33,7 @@ export function createQuartileOutcomePlot(
       xref: "paper",
       yref: "paper",
       showarrow: false,
-      font: { size: 12 },
+      font: { size: 16 },
     });
     if (
       !bars.some(
@@ -98,7 +98,7 @@ export function createQuartileOutcomePlot(
     dtick: 25,
   };
   const layout: Partial<Layout> = {
-    margin: { l: 52, r: 12, t: 30, b: 44 },
+    margin: { l: 52, r: 12, t: 40, b: 44 },
     showlegend: false,
     bargap: 0.25,
     paper_bgcolor: "rgba(0,0,0,0)",

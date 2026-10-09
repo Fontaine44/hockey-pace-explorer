@@ -21,7 +21,7 @@ function percentageLayout(yTitle: string, stacked = false): Partial<Layout> {
       xanchor: "center",
       y: 1,
       yanchor: "bottom",
-      font: { size: 10 },
+      font: { size: 14 },
     },
     xaxis: {
       fixedrange: true,
@@ -90,6 +90,7 @@ export function createOzRecoveryPlot(rows: OzRecoveryOutcome[]) {
 export function createEntryTypePlot(rows: EntryTypeOutcome[]) {
   const bars = quartiles(rows);
   const counts = bars.map((row) => row?.entries ?? null);
+  const layout = percentageLayout("Entries (%)", true);
   return {
     traces: [
       percentageTrace(
@@ -111,7 +112,11 @@ export function createEntryTypePlot(rows: EntryTypeOutcome[]) {
         true,
       ),
     ],
-    layout: percentageLayout("Entries (%)", true),
+    layout: {
+      ...layout,
+      margin: { ...layout.margin, t: 50 },
+      legend: { ...layout.legend, y: 1.02 },
+    },
   };
 }
 

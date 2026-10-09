@@ -287,6 +287,8 @@ export function GameReviewPage() {
             height: "calc(200% + 2rem)",
           }}
         >
+          <GamePolygridPanel game={selectedGame} />
+          <GameTeamPacePanel game={selectedGame} />
           <PanelCard fill className="col-span-2 pt-5">
             <div className="grid h-full min-h-0 grid-cols-2 gap-16">
               <div className="flex min-h-0 min-w-0 flex-col gap-3">
@@ -545,8 +547,6 @@ export function GameReviewPage() {
               </div>
             </div>
           </PanelCard>
-          <GamePolygridPanel game={selectedGame} />
-          <GameTeamPacePanel game={selectedGame} />
         </div>
       </section>
     </div>
